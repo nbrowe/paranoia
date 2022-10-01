@@ -1,8 +1,9 @@
 <script>
-  import {v4 as uuidv4} from 'uuid';
+  import { v4 as uuidv4 } from "uuid";
+  import {createEventDispatcher} from 'svelte';
   import Button from "../ui/Button.svelte";
   import Card from "../ui/Card.svelte";
-    import RatingSelect from "./RatingSelect.svelte";
+  import RatingSelect from "./RatingSelect.svelte";
 
   let text = "";
   let rating = 10;
@@ -10,10 +11,11 @@
   let min = 10;
   let message;
 
-  const handleSelect = (e) => rating = e.detail;
+  const dispatch = createEventDispatcher();
+
+  const handleSelect = (e) => (rating = e.detail);
 
   const handleInput = () => {
-    console.log(text.trim().length);
     if (text.trim().length < min) {
       message = `Text must be at least ${min} characters.`;
       btnDisabled = true;
@@ -23,18 +25,17 @@
     }
   };
 
-const handleSubmit = () => {
-  if(text.trim().length >= min) {
-    const newFeedback = {
-      id: uuidv4(),
-      text,
-      rating: +rating,
+  const handleSubmit = () => {
+    if (text.trim().length >= min) {
+      const newFeedback = {
+        id: uuidv4(),
+        text,
+        rating: +rating,
+      };
+      dispatch('submit-feedback', newFeedback);
+      console.log(newFeedback);
     }
-
-    console.log(newFeedback);
-  }
-}
-
+  };
 </script>
 
 <Card>
@@ -42,7 +43,7 @@ const handleSubmit = () => {
     <h2>How would you rate your service with us?</h2>
   </header>
   <form on:submit|preventDefault={handleSubmit}>
-    <RatingSelect on:rating-select={handleSelect}/>
+    <RatingSelect on:rating-select={handleSelect} />
     <div class="input-group">
       <input
         type="text"
