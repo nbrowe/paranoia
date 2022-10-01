@@ -7,17 +7,7 @@
 		{
 			id: 1,
 			rating: 10,
-			text: "I cumulus in my pumulus...",
-		},
-		{
-			id: 2,
-			rating: 9,
-			text: "He she it we me meee.",
-		},
-		{
-			id: 3,
-			rating: 7,
-			text: "GOOD LORD EVERYTHING IS ON FIRE !",
+			text: "dummy value",
 		},
 	];
 
@@ -40,5 +30,5 @@
 <main class="container">
 	<FeedbackForm on:submit-feedback={addFeedback}/>
 	<FeedbackStats {count} {average} />
-	<FeedbackList {feedback} on:delete-feedback={deleteFeedback} />
+	<FeedbackList on:delete-feedback={deleteFeedback} />
 </main>
