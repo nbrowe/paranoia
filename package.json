@@ -1,6 +1,6 @@
 {
-  "name": "svelte-app",
-  "version": "1.0.0",
+  "name": "paranoia-app",
+  "version": "0.1.0",
   "devDependencies": {
     "cross-env": "^7.0.3",
     "css-loader": "^5.0.1",

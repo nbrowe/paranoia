@@ -1,21 +1,20 @@
 <script>
   export let disabled = false;
-  export let style = 'primary';
-  export let type = 'button';
+  export let style = "primary";
+  export let type = "button";
 </script>
 
 <button {type} {disabled} class={style}>
-  <slot></slot>
+  <slot />
 </button>
 
 <style>
-
   button {
     color: #fff;
     border: 0;
     border-radius: 8px;
     color: #fff;
-    width: 100px;
+    width: 80px;
     height: 40px;
     cursor: pointer;
   }
