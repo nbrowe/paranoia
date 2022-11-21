@@ -59,6 +59,7 @@ module.exports = {
 	],
 	devtool: prod ? false : 'source-map',
 	devServer: {
-		hot: true
+		hot: true,
+		port: 5000  // This will be the development port by default.
 	}
 };
