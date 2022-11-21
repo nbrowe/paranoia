@@ -9,15 +9,16 @@
     "svelte-loader": "^3.0.0",
     "webpack": "^5.16.0",
     "webpack-cli": "^4.4.0",
-    "webpack-dev-server": "^3.11.2"
+    "webpack-dev-server": "^4.11.1"
   },
   "scripts": {
-    "build": "cross-env NODE_ENV=production webpack",
-    "dev": "webpack serve --content-base public --port 5000",
-    "api": "webpack serve --content-base api --port 5001",
-    "localdeploy": "cross-env NODE_ENV=production webpack serve --content-base public"
+    "build": "webpack --mode=production  --config webpack.prod.config.js",
+    "dev": "webpack serve --mode=development --config=webpack.dev.config.js --port=5000",
+    "api": "webpack serve --mode=development --config=webpack.dev.config.js --port=5001 ",
+    "localdeploy": "webpack serve --mode=production --config webpack.prod.config.js --content-base public"
   },
   "dependencies": {
+    "socket.io": "^4.5.3",
     "uuid": "^9.0.0"
   }
 }
