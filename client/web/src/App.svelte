@@ -77,8 +77,8 @@
 </div>
 
 <style>
-  /* Phones: an expanded user list scrolls with this pane instead of in
-     its own box; the timeline keeps a usable minimum height. */
+  /* Phones: the pane scrolls so the timeline keeps a usable minimum
+     height beside the (height-bounded) user list. */
   .panes {
     overflow: auto;
   }
