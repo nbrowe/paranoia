@@ -40,6 +40,7 @@ class App:
         self.lines = []
         self.buf = ""
         self.topic = ""
+        self.op = ""
         self.tab = None  # logic.Completion while cycling with Tab
         self.closed = False
 
@@ -58,6 +59,7 @@ class App:
             self.nick = frame["nick"]
         self.users = logic.update_users(self.users, frame)
         self.topic = logic.update_topic(self.topic, frame)
+        self.op = logic.update_op(self.op, frame)
         for line in logic.format_event(frame, self.nick):
             self.add(line)
         if logic.is_self_kick(frame, self.nick):
@@ -130,7 +132,8 @@ class App:
         self.scr.addstr(0, x, "users", curses.A_BOLD)
         for y, user in enumerate(self.users[:rows - 1], start=1):
             attr = curses.A_BOLD if user == self.nick else curses.A_NORMAL
-            self.scr.addstr(y, x, user[:SIDEBAR_WIDTH - 2], attr)
+            label = logic.mark_user(user, self.nick, self.op)
+            self.scr.addstr(y, x, label[:SIDEBAR_WIDTH - 2], attr)
         for y in range(rows):
             self.scr.addch(y, x - 1, curses.ACS_VLINE)
 

@@ -155,3 +155,16 @@ def test_complete_scope_and_exclusions():
     assert logic.complete("hello b", users, "me") == ("hello b", None)
     assert logic.complete("/kick b", users, "me")[0] == "/kick b"
     assert logic.complete("/kick a rude b", users, "me")[1] is None
+
+
+def test_mark_user_and_update_op():
+    """`@` prefixes the operator, `*` marks self; op follows frames."""
+    assert logic.mark_user("a", "a", "b") == "a*"
+    assert logic.mark_user("b", "a", "b") == "@b"
+    assert logic.mark_user("a", "a", "a") == "@a*"
+    assert logic.mark_user("c", "a", "b") == "c"
+    assert logic.update_op("", {"type": "welcome", "op": "x"}) == "x"
+    assert logic.update_op("x", {"type": "op", "nick": "y"}) == "y"
+    assert logic.update_op("x", {"type": "leave", "nick": "y"}) == "x"
+    kick = {"type": "kick", "nick": "z", "by": "x"}
+    assert logic.update_op("x", kick) == "x"

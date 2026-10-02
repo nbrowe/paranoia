@@ -3,7 +3,8 @@
 Purpose: everything about the Paranoia protocol that needs no terminal or
 socket, so it can be unit tested.
 Scope: slash-command parsing, `say` frame construction, server frame
-decoding, roster updates and one-line rendering of server events.
+decoding, roster/operator updates, user-list markers and one-line
+rendering of server events.
 Limitations: no I/O; line wrapping is left to the curses layer.
 """
 
@@ -159,6 +160,21 @@ def update_users(users, frame):
     if kind in ("leave", "kick"):
         return sorted(set(users) - {frame["nick"]})
     return list(users)
+
+
+def mark_user(nick, own_nick, op):
+    """User-list label: `@` prefixes the operator, `*` follows our nick.
+
+    Display only; always use the bare nick for omit/kick/completion."""
+    lead = "@" if nick == op else ""
+    return lead + nick + ("*" if nick == own_nick else "")
+
+
+def update_op(op, frame):
+    """Return the room operator after applying welcome/op."""
+    if frame["type"] in ("welcome", "op"):
+        return frame.get("op", frame.get("nick", op))
+    return op
 
 
 def update_topic(topic, frame):
