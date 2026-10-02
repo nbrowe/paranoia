@@ -12,15 +12,30 @@ protocol to one in-memory server.
 | Path             | Contents                                         |
 |------------------|--------------------------------------------------|
 | `server/`        | FastAPI + uvicorn backend ([README](server/README.md)) |
-| `client/tui`     | terminal client                                  |
-| `client/desktop` | desktop client                                   |
-| `client/web`     | web client                                       |
+| `client/tui`     | curses terminal client ([README](client/tui/README.md)) |
+| `client/desktop` | Tkinter desktop client ([README](client/desktop/README.md)) |
+| `client/web`     | Svelte web client ([README](client/web/README.md)) |
 | `docs/`          | [protocol](docs/protocol.md), [deployment](docs/deployment.md) |
 
-Not every client directory exists on every branch yet; as clients land,
-each will carry its own README.
+## Quick start
 
-## Running the server
+Start the server first: `podman-compose up -d --build` from the repo root
+(see [docs/deployment.md](docs/deployment.md)), or run it from a local
+virtualenv per [server/README.md](server/README.md). It listens on
+port 8000. Then pick a client; each needs a one-time setup described in
+its own README.
 
-See [docs/deployment.md](docs/deployment.md) for container builds, or
-[server/README.md](server/README.md) for a local virtualenv setup.
+```sh
+# terminal (python venv in client/tui)
+cd client/tui && .venv/bin/python -m paranoia_tui
+
+# desktop (python venv in client/desktop, needs tkinter)
+cd client/desktop && .venv/bin/python -m paranoia_desktop
+
+# web (Node runs in Podman; dev server on http://localhost:5173)
+cd client/web && PODMAN_ARGS="--network host" ./npmw run dev
+```
+
+To omit people from a message: in the TUI and desktop clients type
+`/omit alice bob` (`/omit` alone clears the list); the desktop and web
+clients also let you select users in the user list.
