@@ -31,6 +31,8 @@ class App:
 
     def _build_widgets(self):
         """Create and lay out all widgets."""
+        self.topic = ttk.Label(self.root, anchor="w", relief="groove")
+        self.topic.pack(fill="x")
         top = ttk.Frame(self.root)
         top.pack(fill="both", expand=True)
         self.log = tk.Text(top, state="disabled", wrap="word", width=70,
@@ -54,6 +56,8 @@ class App:
         self.entry = ttk.Entry(self.root)
         self.entry.pack(fill="x")
         self.entry.bind("<Return>", self._on_enter)
+        self.entry.bind("<Tab>", self._on_tab)
+        self.completion = None
         self.entry.focus_set()
         self.status = ttk.Label(self.root, anchor="w", relief="sunken")
         self.status.pack(fill="x")
@@ -68,6 +72,7 @@ class App:
     def _refresh_status(self):
         """Redraw the status bar."""
         self.status.configure(text=logic.format_status(self.state))
+        self.topic.configure(text="Topic: " + self.state.topic)
 
     def _refresh_users(self):
         """Redraw the user list and restore selection from the omit list."""
@@ -90,7 +95,7 @@ class App:
         self._refresh_status()
 
     def _on_enter(self, _event):
-        """Handle the entry box: send a message or run /omit."""
+        """Handle the entry box: send a message or run a slash command."""
         parsed = logic.parse_input(self.entry.get())
         if parsed is None:
             return
@@ -98,12 +103,40 @@ class App:
         kind, arg = parsed
         if kind == "say":
             self._send(logic.build_say(arg, self.state.omit))
+        elif kind == "action":
+            self._send(logic.build_say(arg, self.state.omit, action=True))
         elif kind == "omit":
             self.state.omit = logic.normalize_omit(arg, self.state.nick)
             self._refresh_users()
             self._refresh_status()
+        elif kind == "kick":
+            self._send(logic.build_kick(*arg))
+        elif kind == "topic":
+            self._do_topic(arg)
+        elif kind == "help":
+            for line in logic.HELP:
+                self.show("notice", line)
         else:
             self.show("error", "! " + arg)
+
+    def _on_tab(self, _event):
+        """TAB: complete or cycle a nick; never move keyboard focus."""
+        line = self.entry.get()
+        comp = logic.complete(line, self.state.users, self.state.nick,
+                              self.completion)
+        if comp:
+            self.completion = comp
+            self.entry.delete(0, "end")
+            self.entry.insert(0, comp.line)
+            self.entry.icursor("end")
+        return "break"
+
+    def _do_topic(self, text):
+        """/topic: show the current topic, or send a new one."""
+        if text is None:
+            self.show("notice", logic.format_topic(self.state.topic))
+        else:
+            self._send(logic.build_topic(text))
 
     def _send(self, frame):
         """Send a frame, or complain if the connection is gone."""
@@ -124,7 +157,8 @@ class App:
                 self._refresh_users()
             else:
                 self.connected = False
-                self.show("error", f"! {payload} (restart to reconnect)")
+                if not self.state.kicked:  # a kick is final, say no more
+                    self.show("error", f"! {payload} (restart to reconnect)")
         self._refresh_status()
         self.root.after(POLL_MS, self._poll)
 

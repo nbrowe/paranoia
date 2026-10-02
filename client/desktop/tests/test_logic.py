@@ -13,6 +13,29 @@ def test_parse_input():
     assert logic.parse_input("/nope")[0] == "error"
 
 
+def test_parse_commands():
+    """/help, /me, /kick, /topic and the // escape."""
+    assert logic.parse_input("/help") == ("help", None)
+    assert logic.parse_input("/me waves  ") == ("action", "waves")
+    assert logic.parse_input("/me")[0] == "error"
+    assert logic.parse_input("/kick bob") == ("kick", ("bob", ""))
+    assert logic.parse_input("/kick bob be  nice") == (
+        "kick", ("bob", "be  nice"))
+    assert logic.parse_input("/kick")[0] == "error"
+    assert logic.parse_input("/topic") == ("topic", None)
+    assert logic.parse_input("/topic a b") == ("topic", "a b")
+    assert logic.parse_input("//omit x") == ("say", "/omit x")
+
+
+def test_build_frames():
+    """Action flag only present when set; topic and kick frames."""
+    assert "action" not in logic.build_say("x", [])
+    assert logic.build_say("x", [], action=True)["action"] is True
+    assert logic.build_topic("t") == {"type": "topic", "text": "t"}
+    assert logic.build_kick("b", "r") == {
+        "type": "kick", "nick": "b", "reason": "r"}
+
+
 def test_build_say_copies_omit():
     """The frame carries a copy of the omit list."""
     omit = ["a"]
@@ -77,3 +100,69 @@ def test_format_status():
     st = ChatState(nick="me", room="r", omit=["a", "b"])
     assert logic.format_status(st) == "you: me  room: r  omit: a, b"
     assert "omit: none" in logic.format_status(ChatState())
+
+
+def test_format_topic():
+    """Set and unset topics."""
+    assert logic.format_topic("hi") == "* topic: hi"
+    assert logic.format_topic("") == "* no topic set"
+
+
+def test_action_message():
+    """/me messages render as '* nick text', masked too."""
+    line = logic.format_message(_msg(action=True))[1]
+    assert line.endswith("* pikachu hello")
+    tag, line = logic.format_message(_msg(action=True, text="**", masked=True))
+    assert tag == "masked" and line.endswith("* pikachu **")
+
+
+def test_welcome_topic_and_topic_frame():
+    """Welcome seeds topic/op; topic and op frames update them."""
+    st = ChatState()
+    logic.apply_frame(st, {"type": "welcome", "nick": "me", "room": "r",
+                           "users": ["me"], "history": [], "topic": "hi",
+                           "op": "me"})
+    assert (st.topic, st.op) == ("hi", "me")
+    out = logic.apply_frame(st, {"type": "topic", "nick": "a", "text": "yo"})
+    assert st.topic == "yo" and "a set the topic: yo" in out[0][1]
+    out = logic.apply_frame(st, {"type": "topic", "nick": "a", "text": ""})
+    assert st.topic == "" and "cleared" in out[0][1]
+    logic.apply_frame(st, {"type": "op", "nick": "a"})
+    assert st.op == "a"
+
+
+def test_kick_other_and_self():
+    """Kicking someone drops them; kicking us flags the session."""
+    st = ChatState(nick="me", users=["bob", "me"])
+    out = logic.apply_frame(st, {"type": "kick", "nick": "bob", "by": "me",
+                                 "reason": "spam"})
+    assert st.users == ["me"] and not st.kicked
+    assert out == [("notice", "* bob was kicked by me: spam")]
+    out = logic.apply_frame(st, {"type": "kick", "nick": "me", "by": "x",
+                                 "reason": ""})
+    assert st.kicked and out == [("error", "! you were kicked by x")]
+
+
+USERS = ["abe", "Abby", "bob", "me"]
+
+
+def test_complete_prefix_and_cycle():
+    """Case-insensitive prefix, own nick excluded, repeated TAB cycles."""
+    c = logic.complete("/omit a", USERS, "me")
+    assert c.line == "/omit Abby"  # sorted: "Abby" < "abe"
+    c = logic.complete(c.line, USERS, "me", c)
+    assert c.line == "/omit abe"
+    c = logic.complete(c.line, USERS, "me", c)
+    assert c.line == "/omit Abby"
+    assert logic.complete("/omit m", USERS, "me") is None
+
+
+def test_complete_scope():
+    """Empty word lists all; /kick only completes its first argument."""
+    assert logic.complete("/omit abe ", USERS, "me").cands == [
+        "Abby", "abe", "bob"]
+    assert logic.complete("/omit abe b", USERS, "me").line == "/omit abe bob"
+    assert logic.complete("/kick b", USERS, "me").line == "/kick bob"
+    assert logic.complete("/kick bob b", USERS, "me") is None
+    assert logic.complete("/me b", USERS, "me") is None
+    assert logic.complete("hello b", USERS, "me") is None
