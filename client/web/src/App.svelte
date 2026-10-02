@@ -34,6 +34,11 @@
     connecting: 'text-bg-warning',
     disconnected: 'text-bg-danger',
   }
+  const label = {
+    open: 'online',
+    connecting: 'connecting',
+    disconnected: 'offline',
+  }
 
   /**
    * Send the text with the current omit list.
@@ -53,7 +58,7 @@
     <span class="ms-auto text-nowrap">
       you are <strong data-testid="nick">{s.nick ?? '—'}</strong>
       <span class="badge {badge[s.status]}" data-testid="status">
-        {s.status}</span>
+        {label[s.status]}</span>
     </span>
   </header>
 

@@ -16,7 +16,7 @@ test('shows disconnected, recovers and works again', async ({ browser }) => {
   await expect(a.messages).toHaveCount(1)
 
   await restartServer()
-  await expect(a.status).toHaveText('open', { timeout: 20000 })
+  await expect(a.status).toHaveText('online', { timeout: 20000 })
 
   // A restart wipes state, so the welcome frame resets the timeline.
   const nick = (await a.page.getByTestId('nick').textContent()).trim()
@@ -39,7 +39,7 @@ test('shows a disconnected state while the server is down',
     await a.box(b.nick).check()
     await a.say('kept while down')
     await expect(a.messages).toHaveCount(1)
-    const down = expect(a.status).toHaveText('disconnected')
+    const down = expect(a.status).toHaveText('offline')
     await restartServer()
     await down
 
@@ -51,7 +51,7 @@ test('shows a disconnected state while the server is down',
     await expect(a.omitBar).toHaveText('Omitting nobody')
     await expect(a.message(a.nick, 'kept while down')).toHaveCount(1)
 
-    await expect(a.status).toHaveText('open', { timeout: 20000 })
+    await expect(a.status).toHaveText('online', { timeout: 20000 })
     await expect(nick).not.toHaveText('—')
     await expect(a.notices.filter({ hasText: 'Disconnected' })).toHaveCount(0)
   })

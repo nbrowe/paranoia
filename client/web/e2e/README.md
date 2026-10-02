@@ -11,7 +11,7 @@ the real server image, one browser context per chat user.
 | `tests/chat.spec.js`      | two users, plaintext both ways                  |
 | `tests/omit.spec.js`      | omit via checkbox: masked / plaintext / badge, then untick |
 | `tests/leave.spec.js`     | leaver removed from lists, omit selection pruned|
-| `tests/reconnect.spec.js` | server restart: disconnected (list/nick cleared), recovery, new nick |
+| `tests/reconnect.spec.js` | server restart: offline (list/nick cleared), recovery, new nick |
 | `tests/history.spec.js`   | late joiner sees history masked per recipient   |
 | `tests/layout.spec.js`    | 390px: no overflow, users toggle, many users, no nested scroll |
 
