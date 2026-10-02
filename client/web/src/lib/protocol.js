@@ -1,8 +1,8 @@
 /*
  * Wire helpers for docs/protocol.md: WebSocket URL derivation and
  * client frame construction. Pure JS, no Svelte or DOM.
- * Scope: URL building and the `say` frame. Limitations: text length is
- * validated by the server (1-500 chars), not here.
+ * Scope: URL building and the say, topic and kick frames. Limitations:
+ * text length is validated by the server, not here.
  */
 
 /**
@@ -25,10 +25,32 @@ export function wsUrl(loc, override) {
  * Build a `say` frame as a JSON string.
  * @param {string} text raw input text
  * @param {string[]} omit nicknames that must not read the message
+ * @param {boolean} [action] true for a /me message
  * @returns {string|null} JSON text, or null if the text is blank
  */
-export function buildSay(text, omit) {
+export function buildSay(text, omit, action = false) {
   const trimmed = text.trim()
   if (!trimmed) return null
-  return JSON.stringify({ type: 'say', text: trimmed, omit })
+  const frame = { type: 'say', text: trimmed, omit }
+  if (action) frame.action = true
+  return JSON.stringify(frame)
+}
+
+/**
+ * Build a `topic` frame; empty text clears the topic.
+ * @param {string} text new topic
+ * @returns {string} JSON text
+ */
+export function buildTopic(text) {
+  return JSON.stringify({ type: 'topic', text: text.trim() })
+}
+
+/**
+ * Build a `kick` frame.
+ * @param {string} nick user to remove
+ * @param {string} [reason] optional reason
+ * @returns {string} JSON text
+ */
+export function buildKick(nick, reason = '') {
+  return JSON.stringify({ type: 'kick', nick, reason: reason.trim() })
 }

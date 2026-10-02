@@ -1,9 +1,9 @@
 /*
  * Unit tests for wire helpers (protocol.js).
- * Scope: URL derivation and `say` frame building. Limitations: none.
+ * Scope: URL derivation and say/topic/kick frame building. Limitations: none.
  */
 import { describe, it, expect } from 'vitest'
-import { wsUrl, buildSay } from './protocol.js'
+import { wsUrl, buildSay, buildTopic, buildKick } from './protocol.js'
 
 describe('wsUrl', () => {
   it('uses ws for http and defaults to the lobby', () => {
@@ -31,5 +31,25 @@ describe('buildSay', () => {
 
   it('returns null for blank text', () => {
     expect(buildSay('   ', [])).toBeNull()
+  })
+})
+
+describe('action, topic and kick frames', () => {
+  it('say adds action only when requested', () => {
+    expect(JSON.parse(buildSay('hi', ['a'], true)))
+      .toEqual({ type: 'say', text: 'hi', omit: ['a'], action: true })
+    expect(JSON.parse(buildSay('hi', []))).not.toHaveProperty('action')
+  })
+
+  it('topic trims and allows empty', () => {
+    expect(JSON.parse(buildTopic('  hello  ')))
+      .toEqual({ type: 'topic', text: 'hello' })
+    expect(JSON.parse(buildTopic(''))).toEqual({ type: 'topic', text: '' })
+  })
+
+  it('kick carries nick and trimmed reason, default empty', () => {
+    expect(JSON.parse(buildKick('mew', ' spam ')))
+      .toEqual({ type: 'kick', nick: 'mew', reason: 'spam' })
+    expect(JSON.parse(buildKick('mew')).reason).toBe('')
   })
 })
