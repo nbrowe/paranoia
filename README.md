@@ -22,18 +22,24 @@ protocol to one in-memory server.
 Start the server first: `podman-compose up -d --build` from the repo root
 (see [docs/deployment.md](docs/deployment.md)), or run it from a local
 virtualenv per [server/README.md](server/README.md). It listens on
-port 8000. Then pick a client; each needs a one-time setup described in
-its own README.
+port 8000. Then pick a client. Each block below is the full sequence from
+a fresh clone; after the first time, only the last line is needed.
 
 ```sh
-# terminal (python venv in client/tui)
-cd client/tui && .venv/bin/python -m paranoia_tui
+# terminal
+cd client/tui
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/python -m paranoia_tui
 
-# desktop (python venv in client/desktop, needs tkinter)
-cd client/desktop && .venv/bin/python -m paranoia_desktop
+# desktop (needs tkinter, see its README)
+cd client/desktop
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/python -m paranoia_desktop
 
-# web (Node runs in Podman; dev server on http://localhost:5173)
-cd client/web && PODMAN_ARGS="--network host" ./npmw run dev
+# web (Node runs in Podman; open http://localhost:5173)
+cd client/web
+./npmw install
+PODMAN_ARGS="--network host" ./npmw run dev
 ```
 
 To omit people from a message: in the TUI and desktop clients type
