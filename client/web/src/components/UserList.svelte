@@ -7,7 +7,9 @@
   let { users, nick, omit, ontoggle } = $props()
 </script>
 
-<aside class="border-start overflow-auto p-2" style="width: 12rem">
+<aside
+  class="border-start overflow-auto p-2" data-testid="user-list"
+  style="width: 12rem">
   <div class="small text-muted mb-1">Users ({users.length}) - tick to omit</div>
   {#each users as u (u)}
     {#if u === nick}

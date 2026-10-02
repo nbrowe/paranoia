@@ -34,19 +34,25 @@
   })
 </script>
 
-<div class="flex-grow-1 overflow-auto p-2" bind:this={el} {onscroll}>
+<div
+  class="flex-grow-1 overflow-auto p-2" data-testid="timeline"
+  bind:this={el} {onscroll}>
   {#each items as it (it.key)}
     {#if it.kind === 'notice'}
-      <div class="small fst-italic {it.level === 'error'
+      <div data-testid="notice" class="small fst-italic {it.level === 'error'
         ? 'text-danger' : 'text-muted'}">* {it.text}</div>
     {:else}
-      <div class={it.masked ? 'text-muted fst-italic' : ''}>
+      <div
+        data-testid="message"
+        class={it.masked ? 'text-muted fst-italic' : ''}>
         <span class="text-muted small">{clock(it.ts)}</span>
-        <strong class={it.sender === nick ? 'text-primary' : ''}>
+        <strong
+          data-testid="sender"
+          class={it.sender === nick ? 'text-primary' : ''}>
           {it.sender}</strong>
-        <span class="text-break">{it.text}</span>
+        <span class="text-break" data-testid="text">{it.text}</span>
         {#if it.omitted?.length}
-          <span class="badge text-bg-secondary">
+          <span class="badge text-bg-secondary" data-testid="omitted">
             hidden from {it.omitted.join(', ')}</span>
         {/if}
       </div>

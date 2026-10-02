@@ -49,8 +49,9 @@
     <strong>Paranoia</strong>
     {#if s.room}<span class="text-muted">#{s.room}</span>{/if}
     <span class="ms-auto">
-      {#if s.nick}you are <strong>{s.nick}</strong>{/if}
-      <span class="badge {badge[s.status]}">{s.status}</span>
+      {#if s.nick}you are <strong data-testid="nick">{s.nick}</strong>{/if}
+      <span class="badge {badge[s.status]}" data-testid="status">
+        {s.status}</span>
     </span>
   </header>
 

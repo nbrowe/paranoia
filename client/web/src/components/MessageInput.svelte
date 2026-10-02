@@ -20,7 +20,7 @@
 </script>
 
 <form class="border-top p-2" onsubmit={submit}>
-  <div class="small mb-1">
+  <div class="small mb-1" data-testid="omit-bar">
     {#if omit.length}
       <span class="text-danger">Omitting:</span>
       {#each omit as n (n)}

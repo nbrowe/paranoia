@@ -1,0 +1,32 @@
+# Compose stack for the web client e2e suite (project name paranoia-e2e).
+#
+# Purpose: the real server image plus the production web build served by
+#          `vite preview`, which proxies /ws and /healthz to the server
+#          exactly like the dev setup in client/web/README.md.
+# Scope:   host ports 18000 (server) and 15173 (web); never 8000, so it can
+#          run beside the root compose.yaml. Started by ./run.
+# Limits:  expects image paranoia-e2e-server (built by ./run) and a
+#          client/web/dist produced by `vite build` (also done by ./run).
+
+name: paranoia-e2e
+
+services:
+  server:
+    image: paranoia-e2e-server:latest
+    container_name: paranoia-e2e-server
+    ports:
+      - "18000:8000"
+
+  web:
+    image: docker.io/library/node:24-alpine
+    container_name: paranoia-e2e-web
+    working_dir: /app
+    volumes:
+      - ..:/app:Z
+    environment:
+      VITE_PROXY_TARGET: http://server:8000
+    command: npx vite preview --host 0.0.0.0 --port 5173
+    ports:
+      - "15173:5173"
+    depends_on:
+      - server
