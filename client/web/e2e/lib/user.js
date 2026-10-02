@@ -1,7 +1,7 @@
 /*
  * Test helper: a chat user driven through its own browser context.
  * Scope: joins a room, exposes locators for the main UI parts and actions
- * to send messages and toggle omit checkboxes. Selectors are the
+ * to send messages and toggle omit buttons. Selectors are the
  * data-testid hooks in client/web/src plus ARIA roles.
  * Limitations: one page per user; no multi-room support.
  */
@@ -91,12 +91,23 @@ export class User {
   }
 
   /**
-   * Checkbox for another user in the user list.
+   * Toggle button (aria-pressed) for another user in the user list.
    * @param {string} nick other user's nick
-   * @returns {import('@playwright/test').Locator} checkbox locator
+   * @returns {import('@playwright/test').Locator} button locator
    */
   box(nick) {
-    return this.userList.getByRole('checkbox', { name: nick, exact: true })
+    return this.userList.getByRole('button', { name: nick, exact: true })
+  }
+
+  /**
+   * Click a user's toggle button and wait for the new pressed state.
+   * @param {string} nick other user's nick
+   * @param {boolean} on expected aria-pressed afterwards
+   * @returns {Promise<void>}
+   */
+  async omit(nick, on = true) {
+    await this.box(nick).click()
+    await expect(this.box(nick)).toHaveAttribute('aria-pressed', String(on))
   }
 
   /**

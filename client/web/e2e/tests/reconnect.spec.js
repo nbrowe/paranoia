@@ -36,7 +36,7 @@ test('shows a disconnected state while the server is down',
     const room = uniqueRoom()
     const a = await User.join(browser, room)
     const b = await User.join(browser, room)
-    await a.box(b.nick).check()
+    await a.omit(b.nick)
     await a.say('kept while down')
     await expect(a.messages).toHaveCount(1)
     const down = expect(a.status).toHaveText('offline')
@@ -47,7 +47,7 @@ test('shows a disconnected state while the server is down',
     const nick = a.page.getByTestId('nick')
     await expect(nick).toHaveText('—')
     await expect(a.userList).toContainText('Users (0)')
-    await expect(a.userList.getByRole('checkbox')).toHaveCount(0)
+    await expect(a.userList.getByRole('button')).toHaveCount(0)
     await expect(a.omitBar).toHaveText('Omitting nobody')
     await expect(a.message(a.nick, 'kept while down')).toHaveCount(1)
 

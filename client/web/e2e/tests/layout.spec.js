@@ -1,8 +1,9 @@
 /*
  * E2E: the page fits a phone-width viewport.
  * Scope: no horizontal page overflow at 390px, the collapsed "Users (N)"
- * toggle that expands the list inline, and no nested scroll box with many
- * users. Limitations: one width only; no visual diffs.
+ * toggle that expands the list inline, and a long user list scrolling in
+ * its own bounded box (phone and desktop) while the timeline and input
+ * stay reachable. Limitations: two widths only; no visual diffs.
  */
 import { test, expect } from '@playwright/test'
 import { User, uniqueRoom, addLurkers } from '../lib/user.js'
@@ -23,12 +24,12 @@ async function phone(browser, room) {
   return page
 }
 
-test('no overflow at 390px, checkbox usable', async ({ browser }) => {
+test('no overflow at 390px, toggle button usable', async ({ browser }) => {
   const room = uniqueRoom()
   const a = await User.join(browser, room)
   const page = await phone(browser, room)
   const toggle = page.getByTestId('user-toggle')
-  const box = page.getByRole('checkbox', { name: a.nick })
+  const box = page.getByRole('button', { name: a.nick, exact: true })
   await expect(toggle).toHaveText(/Users \(2\)/)
   await expect(box).toBeHidden()
   await toggle.click()
@@ -45,25 +46,53 @@ test('no overflow at 390px, checkbox usable', async ({ browser }) => {
   await page.context().close()
 })
 
-test('many users: no nested scroll box, all reachable', async ({ browser }) => {
-  const room = uniqueRoom()
-  const page = await phone(browser, room)
-  await addLurkers(page, room, 15)
-  const toggle = page.getByTestId('user-toggle')
-  await expect(toggle).toHaveText(/Users \(16\)/)
-  await toggle.click()
+test('many users: list scrolls in its own box, rest reachable',
+  async ({ browser }) => {
+    const room = uniqueRoom()
+    const page = await phone(browser, room)
+    await addLurkers(page, room, 24)
+    const toggle = page.getByTestId('user-toggle')
+    await expect(toggle).toHaveText(/Users \(25\)/)
+    await toggle.click()
 
-  // The list must not be its own scroll container.
-  const clipped = await page.getByTestId('user-list').evaluate(
-    (el) => el.scrollHeight > el.clientHeight + 1 &&
-      getComputedStyle(el).overflowY !== 'visible')
-  expect(clipped).toBe(false)
+    const body = page.locator('#user-list-body')
+    const box = await body.evaluate((el) => ({
+      scrolls: el.scrollHeight > el.clientHeight + 1,
+      overflowY: getComputedStyle(el).overflowY,
+      height: el.clientHeight,
+    }))
+    expect(box.scrolls).toBe(true)
+    expect(box.overflowY).toBe('auto')
+    expect(box.height).toBeLessThanOrEqual(844 * 0.4 + 1)
 
-  const timeline = await page.getByTestId('timeline').boundingBox()
-  expect(timeline.height).toBeGreaterThanOrEqual(200)
-  const last = page.getByRole('checkbox').last()
-  await last.scrollIntoViewIfNeeded()
-  await expect(last).toBeInViewport()
-  await expect(page.getByPlaceholder('Message')).toBeInViewport()
-  await page.context().close()
-})
+    const timeline = await page.getByTestId('timeline').boundingBox()
+    expect(timeline.height).toBeGreaterThanOrEqual(200)
+    const last = body.getByRole('button').last()
+    await last.scrollIntoViewIfNeeded()
+    await expect(last).toBeInViewport()
+    await expect(page.getByPlaceholder('Message')).toBeInViewport()
+    await page.context().close()
+  })
+
+test('desktop: long list scrolls inside the side column',
+  async ({ browser }) => {
+    const room = uniqueRoom()
+    const a = await User.join(browser, room)
+    await addLurkers(a.page, room, 60)
+    await expect(a.userList).toContainText('Users (61)')
+
+    const body = a.page.locator('#user-list-body')
+    const scrolls = await body.evaluate((el) =>
+      el.scrollHeight > el.clientHeight + 1 &&
+      getComputedStyle(el).overflowY === 'auto')
+    expect(scrolls).toBe(true)
+    const page = await a.page.evaluate(() => ({
+      over: document.documentElement.scrollHeight - innerHeight,
+      width: document.documentElement.scrollWidth - innerWidth,
+    }))
+    expect(page).toEqual({ over: 0, width: 0 })
+    await expect(a.input).toBeInViewport()
+    const last = body.getByRole('button').last()
+    await last.scrollIntoViewIfNeeded()
+    await expect(last).toBeInViewport()
+  })
