@@ -1,7 +1,8 @@
 # Paranoia desktop client (Tkinter)
 
 Implements [docs/protocol.md](../../docs/protocol.md). Needs a Python with
-`tkinter` (on Arch: the `tk` package).
+`tkinter` (usually a separate system package, e.g. `tk` or
+`python3-tkinter`; check with `python3 -c 'import tkinter'`).
 
 ## Setup
 
