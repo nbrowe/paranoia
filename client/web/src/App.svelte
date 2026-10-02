@@ -88,7 +88,7 @@
     class="panes d-flex flex-column flex-md-row flex-grow-1">
     <MessageList items={s.items} nick={s.nick} />
     <UserList
-      users={s.users} nick={s.nick} omit={s.omit}
+      users={s.users} nick={s.nick} op={s.op} omit={s.omit}
       ontoggle={(n) => { s = toggleOmit(s, n) }} />
   </div>
 

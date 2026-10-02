@@ -76,6 +76,7 @@ origin, so no build-time URL is needed. Quick local check:
 | `src/lib/commands.js`     | slash-command parsing and handling         |
 | `src/lib/connection.js`   | WebSocket with backoff reconnect           |
 | `src/lib/theme.js`        | theme: time default, toggle, storage       |
+| `src/lib/marks.js`        | user-list markers (`@` operator, `*` you)  |
 | `src/lib/*.test.js`       | Vitest unit tests (core logic only)        |
 | `src/App.svelte`, `src/components/` | UI wiring and presentation       |
 
@@ -88,6 +89,10 @@ outside click closes it. It holds the theme toggle (`data-bs-theme` on
 `src/lib/theme.js`); clicking flips it and keeps that choice in
 `localStorage`. An inline script in `index.html` applies the same rule
 before first paint.
+
+The user list marks the room operator with `@` before the name and
+yourself with `*` after it (`@nick*` for both); the tooltip spells it
+out, and omitting works on the bare nick.
 
 ## Commands
 

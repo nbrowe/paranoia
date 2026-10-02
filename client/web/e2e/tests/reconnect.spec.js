@@ -22,7 +22,7 @@ test('shows disconnected, recovers and works again', async ({ browser }) => {
   const nick = (await a.page.getByTestId('nick').textContent()).trim()
   expect(isPokemon(nick)).toBe(true)
   await expect(a.messages).toHaveCount(0)
-  await expect(a.userList).toContainText(`${nick} (you)`)
+  await expect(a.userList).toContainText(`${nick}*`)
   await expect(a.userList).toContainText('Users (1)')
   await expect(a.input).toBeEnabled()
 
