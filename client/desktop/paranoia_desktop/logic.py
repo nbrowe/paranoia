@@ -30,7 +30,7 @@ HELP = [
     "/omit [nick ...]      set the omit list; alone clears it",
     "/me <text>            send an action (* nick text)",
     "/kick <nick> [why]    remove a user (room operator only)",
-    "/topic [text]         show the topic, or set it",
+    "/topic [text|-]       show the topic, set it, or clear it with -",
     "//text                send a literal /text",
 ]
 
@@ -52,7 +52,7 @@ def parse_input(line):
     if cmd == "/help":
         return ("help", None)
     if cmd == "/topic":
-        return ("topic", rest or None)
+        return ("topic", "" if rest == "-" else rest or None)
     if cmd == "/me":
         return ("action", rest) if rest else ("error", "usage: /me <text>")
     if cmd == "/kick":
@@ -123,6 +123,11 @@ def merge_selection(omit, users, selected):
     the selection."""
     kept = [n for n in omit if n not in users]
     return kept + [n for n in users if n in selected]
+
+
+def format_topic_label(topic):
+    """Text for the topic label above the log; empty topics read (none)."""
+    return f"Topic: {topic or '(none)'}"
 
 
 def format_topic(topic):

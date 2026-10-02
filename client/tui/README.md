@@ -38,6 +38,7 @@ status line (own nick, active omit list, room topic) and the input line.
 | `/kick nick [why]`  | remove a user (room operator only)                |
 | `/topic`            | show the current topic (local)                    |
 | `/topic text`       | set the room topic                                |
+| `/topic -`          | clear the room topic                              |
 | `//text`            | send a message starting with a literal `/`        |
 | `/quit`             | exit                                              |
 
