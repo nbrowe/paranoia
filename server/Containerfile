@@ -1,0 +1,37 @@
+# Containerfile for the Paranoia server.
+#
+# Purpose: build a small runtime image serving the FastAPI app with uvicorn.
+# Scope:   build context is server/ (podman build -f Containerfile server).
+#          Runs as an unprivileged user; state is in memory only.
+# Limits:  no TLS or reverse proxy; HEALTHCHECK is only kept by images built
+#          in Docker format (podman build --format docker).
+#
+# Configuration (PARANOIA_HISTORY_SIZE, PARANOIA_MAX_TEXT,
+# PARANOIA_DEFAULT_ROOM) is read from the environment at runtime.
+
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+RUN useradd --system --create-home --uid 10001 paranoia
+
+WORKDIR /app
+
+# Dependencies first so this layer is cached across source edits.
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY pyproject.toml ./
+COPY paranoia ./paranoia
+# Non-editable install so data/pokemon.txt is installed as package data.
+RUN pip install --no-deps .
+
+USER paranoia
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD ["python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"]
+
+CMD ["uvicorn", "paranoia.app:app", "--host", "0.0.0.0", "--port", "8000"]
