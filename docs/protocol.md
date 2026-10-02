@@ -25,7 +25,9 @@ closes the socket.
 
 | type  | fields                                   | notes                      |
 |-------|------------------------------------------|----------------------------|
-| `say` | `text: string`, `omit: string[]` (opt.)  | send a message to the room |
+| `say` | `text: string`, `omit: string[]` (opt.), `action: bool` (opt.) | send a message to the room |
+| `topic` | `text: string`                         | set the room topic         |
+| `kick` | `nick: string`, `reason: string` (opt.) | remove a user (ops only)  |
 
 - `text` is stripped of leading/trailing whitespace; must be 1-500
   characters after stripping, else `error` (`bad_text`).
@@ -33,6 +35,20 @@ closes the socket.
   Own nickname and duplicates are ignored. Nicknames not currently present
   are accepted (they apply to the stored message, so a user who later
   joins under an omitted nickname sees it masked in history).
+- `action: true` marks an IRC-style `/me` message: clients render it as
+  `* nick text` instead of `<nick> text`. Omission and masking work the
+  same as for normal messages.
+- `topic`: any user may set it (IRC without `+t`). `text` is stripped and
+  may be empty (clears the topic); max 200 characters, else `error`
+  (`bad_text`). The server broadcasts a `topic` frame to everyone,
+  including the setter.
+- `kick`: only the room operator may kick. The operator is the user who
+  has been connected longest; when they leave it passes to the next
+  oldest. `nick` must be present and not the operator's own nickname.
+  `reason` is stripped, max 200 characters, default empty. Everyone,
+  including the target, receives a `kick` frame, then the server closes
+  the target's socket. A kicked user may reconnect (new nickname). Errors:
+  `not_op`, `no_such_nick`, `bad_target` (self).
 - The "sticky omit list" is client UX only; the server keeps no per-user
   omit state. Clients send the current list with every `say`.
 
@@ -40,13 +56,19 @@ closes the socket.
 
 | type      | fields                                                         |
 |-----------|----------------------------------------------------------------|
-| `welcome` | `nick`, `room`, `users: string[]`, `history: Message[]`        |
+| `welcome` | `nick`, `room`, `users: string[]`, `topic: string`, `op: string`, `history: Message[]` |
 | `join`    | `nick`                                                         |
 | `leave`   | `nick`                                                         |
 | `message` | a `Message` (below)                                            |
+| `topic`   | `nick` (who set it), `text`                                    |
+| `kick`    | `nick` (target), `by`, `reason`                                |
+| `op`      | `nick` (new operator; sent when the operator leaves)           |
 | `error`   | `code: string`, `message: string`                              |
 
 `welcome` is always the first frame. `users` includes the recipient.
+`topic` is `""` when unset; `op` is the current operator's nickname.
+A kicked user is not followed by a `leave` frame for that user: `kick`
+replaces it. If the kicked user was never the operator, `op` is unchanged.
 
 ### Message
 
@@ -64,6 +86,7 @@ closes the socket.
 
 - `id`: integer, monotonically increasing per room.
 - `ts`: server time, Unix seconds (float).
+- `action`: `true` only for `/me` messages; absent otherwise.
 - `masked`: `true` if this recipient was omitted. Then `text` is the
   original with every non-whitespace character replaced by `*`
   (whitespace and length preserved). **The server performs masking; the
@@ -78,11 +101,18 @@ closes the socket.
 
 ### Error codes
 
-`bad_json`, `bad_text`, `unknown_type`, `room_full`.
+`bad_json`, `bad_text`, `unknown_type`, `room_full`, `not_op`,
+`no_such_nick`, `bad_target`.
 Errors other than `room_full` do not close the connection.
 
 ## Client UX conventions (non-normative)
 
-- Omit commands in text clients: `/omit alice bob` sets the sticky list,
-  `/omit` alone clears it, and the active list is shown in the input
-  prompt/status line. Masked messages should be visibly distinguishable.
+- Slash commands (all clients; the web client uses its single input box):
+  `/help` (client-side list), `/omit [nick...]` (sets the sticky list;
+  alone clears it), `/me <action>`, `/kick <nick> [reason]`,
+  `/topic [text]` (alone shows the current topic from the last
+  `welcome`/`topic` frame). A leading `//` sends a literal `/`. Unknown
+  commands are reported locally, not sent. The active omit list is shown
+  in the input prompt/status line. Masked messages should be visibly
+  distinguishable. A `kick` frame naming your own nickname means you were
+  removed: show the reason and stop reconnecting.
