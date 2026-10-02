@@ -31,6 +31,23 @@ export function isPokemon(nick) {
   return POKEMON.has(nick)
 }
 
+/**
+ * Join extra silent users by opening raw WebSockets from inside a page
+ * (same origin, so the web server's /ws proxy is used). The sockets live
+ * until the page's context closes.
+ * @param {import('@playwright/test').Page} page any loaded app page
+ * @param {string} room room name
+ * @param {number} count how many users to add
+ * @returns {Promise<void>}
+ */
+export async function addLurkers(page, room, count) {
+  await page.evaluate(({ room, count }) => {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+    window.lurkers = Array.from({ length: count }, () =>
+      new WebSocket(`${proto}://${location.host}/ws?room=${room}`))
+  }, { room, count })
+}
+
 export class User {
   /**
    * @param {import('@playwright/test').Page} page page in its own context
