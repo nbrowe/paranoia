@@ -42,10 +42,10 @@
       <span class="text-muted">Omitting nobody</span>
     {/if}
   </div>
-  <div class="input-group">
+  <div class="d-flex gap-2">
     <input
-      class="form-control" placeholder="Message" maxlength="500"
-      autocomplete="off" bind:this={input} bind:value={text} {disabled} />
-    <button class="btn btn-primary" {disabled}>Send</button>
+      class="form-control rounded-pill px-3" placeholder="Message"
+      maxlength="500" autocomplete="off" bind:this={input} bind:value={text} {disabled} />
+    <button class="btn btn-primary rounded-pill px-4" {disabled}>Send</button>
   </div>
 </form>

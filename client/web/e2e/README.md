@@ -9,11 +9,12 @@ the real server image, one browser context per chat user.
 |---------------------------|-------------------------------------------------|
 | `tests/connect.spec.js`   | nick (Pokemon slug), user list (self first), greeting |
 | `tests/chat.spec.js`      | two users, plaintext both ways                  |
-| `tests/omit.spec.js`      | omit via checkbox: masked / plaintext / badge, then untick |
+| `tests/omit.spec.js`      | omit via toggle button: masked / plaintext / badge, then toggle off |
 | `tests/leave.spec.js`     | leaver removed from lists, omit selection pruned|
-| `tests/reconnect.spec.js` | server restart: disconnected (list/nick cleared), recovery, new nick |
+| `tests/reconnect.spec.js` | server restart: offline (list/nick cleared), recovery, new nick |
 | `tests/history.spec.js`   | late joiner sees history masked per recipient   |
-| `tests/layout.spec.js`    | 390px: no overflow, users toggle, many users, no nested scroll |
+| `tests/theme.spec.js`     | theme selector: auto follows OS, choice persists, no storage |
+| `tests/layout.spec.js`    | 390px and desktop: no overflow, users toggle, long list scrolls in its box |
 
 ## Layout
 
@@ -71,4 +72,4 @@ web-e2e:
 
 Tests use `data-testid` hooks in `client/web/src` (`status`, `nick`,
 `timeline`, `message`, `sender`, `text`, `omitted`, `notice`, `user-list`,
-`omit-bar`) plus ARIA roles (user-list checkboxes by nick).
+`omit-bar`) plus ARIA roles (user-list toggle buttons by nick, `aria-pressed`).

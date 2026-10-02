@@ -11,10 +11,10 @@ test('connects, shows nick, user list and greeting', async ({ browser }) => {
   const a = await User.join(browser, room)
 
   expect(isPokemon(a.nick)).toBe(true)
-  await expect(a.status).toHaveText('open')
+  await expect(a.status).toHaveText('online')
   await expect(a.userList).toContainText('Users (1)')
   await expect(a.userList).toContainText(`${a.nick} (you)`)
-  await expect(a.userList.getByRole('checkbox')).toHaveCount(0)
+  await expect(a.userList.getByRole('button')).toHaveCount(0)
 
   await expect(a.notices).toHaveCount(1)
   await expect(a.notices.first())

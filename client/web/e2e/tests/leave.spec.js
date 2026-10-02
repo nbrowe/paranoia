@@ -13,8 +13,8 @@ test('leaving user is removed and pruned from omit', async ({ browser }) => {
   const c = await User.join(browser, room)
   await expect(a.userList).toContainText('Users (3)')
 
-  await a.box(b.nick).check()
-  await a.box(c.nick).check()
+  await a.omit(b.nick)
+  await a.omit(c.nick)
   await expect(a.omitBar).toContainText(b.nick)
   await expect(a.omitBar).toContainText(c.nick)
 

@@ -1,13 +1,25 @@
 <!doctype html>
 <!--
   HTML entry point for the Paranoia web client (Vite SPA).
-  Scope: mounts the Svelte app into #app. Limitations: none.
+  Scope: mounts the Svelte app into #app; sets the theme early.
+  Limitations: the inline theme script duplicates src/lib/theme.js.
 -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Paranoia</title>
+    <script>
+      // Apply the saved theme before first paint (no light flash). Same
+      // key and rule as src/lib/theme.js.
+      try {
+        var c = localStorage.getItem('paranoia-theme')
+        var dark = c === 'dark' || (c !== 'light' &&
+          matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.setAttribute(
+          'data-bs-theme', dark ? 'dark' : 'light')
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="app"></div>

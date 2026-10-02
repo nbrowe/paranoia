@@ -14,6 +14,7 @@
   import MessageList from './components/MessageList.svelte'
   import UserList from './components/UserList.svelte'
   import MessageInput from './components/MessageInput.svelte'
+  import ThemeSelect from './components/ThemeSelect.svelte'
 
   // Raw state: the reducer returns fresh objects, no deep proxying needed.
   let s = $state.raw(initialState())
@@ -34,6 +35,11 @@
     connecting: 'text-bg-warning',
     disconnected: 'text-bg-danger',
   }
+  const label = {
+    open: 'online',
+    connecting: 'connecting',
+    disconnected: 'offline',
+  }
 
   /**
    * Send the text with the current omit list.
@@ -53,8 +59,9 @@
     <span class="ms-auto text-nowrap">
       you are <strong data-testid="nick">{s.nick ?? '—'}</strong>
       <span class="badge {badge[s.status]}" data-testid="status">
-        {s.status}</span>
+        {label[s.status]}</span>
     </span>
+    <ThemeSelect />
   </header>
 
   <div
@@ -72,8 +79,8 @@
 </div>
 
 <style>
-  /* Phones: an expanded user list scrolls with this pane instead of in
-     its own box; the timeline keeps a usable minimum height. */
+  /* Phones: the pane scrolls so the timeline keeps a usable minimum
+     height beside the (height-bounded) user list. */
   .panes {
     overflow: auto;
   }
