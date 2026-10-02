@@ -2,7 +2,9 @@
 
 Implements [docs/protocol.md](../../docs/protocol.md). Needs a Python with
 `tkinter` (usually a separate system package, e.g. `tk` or
-`python3-tkinter`; check with `python3 -c 'import tkinter'`).
+`python3-tkinter`; check with `python3 -c 'import tkinter'`). On Linux it
+also needs an X display: run from a graphical session (XWayland is fine) or
+use `ssh -X`; the launcher stops early if `DISPLAY` is empty.
 
 ## Run
 
