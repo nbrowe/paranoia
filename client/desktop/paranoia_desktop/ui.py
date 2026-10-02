@@ -78,7 +78,7 @@ class App:
         """Redraw the user list and restore selection from the omit list."""
         self.users.delete(0, "end")
         for i, nick in enumerate(self.state.users):
-            label = nick + (" (you)" if nick == self.state.nick else "")
+            label = logic.mark_user(nick, self.state.nick, self.state.op)
             self.users.insert("end", label)
             if nick in self.state.omit:
                 self.users.selection_set(i)

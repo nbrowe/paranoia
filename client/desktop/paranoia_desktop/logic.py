@@ -1,7 +1,7 @@
 """Pure (Tk-free, I/O-free) client logic for the Paranoia desktop client.
 
 Purpose: input parsing, outgoing frame building, server frame handling and
-message formatting, so all of it is unit-testable without a display.
+message formatting and user-list markers, so all of it is unit-testable without a display.
 Scope: protocol v1 (docs/protocol.md) only.
 Limitations: omit names absent from the user list are kept in the omit
 list but cannot be shown as selected in the list widget.
@@ -201,6 +201,13 @@ def _apply_kick(state, frame):
         return [("error", f"! you were kicked by {frame['by']}{why}")]
     state.users = [u for u in state.users if u != frame["nick"]]
     return [("notice", f"* {frame['nick']} was kicked by {frame['by']}{why}")]
+
+
+def mark_user(nick, own_nick, op):
+    """Display label for the user list: `*` marks us, `@` the operator.
+
+    Display only; always use the bare nick for omit/kick/completion."""
+    return nick + ("*" if nick == own_nick else "") + ("@" if nick == op else "")
 
 
 def format_status(state):

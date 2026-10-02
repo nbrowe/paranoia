@@ -169,3 +169,18 @@ def test_complete_scope():
     assert logic.complete("/kick bob b", USERS, "me") is None
     assert logic.complete("/me b", USERS, "me") is None
     assert logic.complete("hello b", USERS, "me") is None
+
+
+def test_mark_user_and_op_tracking():
+    """`*` marks self, `@` the operator; op follows welcome/op/leave."""
+    assert logic.mark_user("a", "a", "b") == "a*"
+    assert logic.mark_user("b", "a", "b") == "b@"
+    assert logic.mark_user("a", "a", "a") == "a*@"
+    st = logic.ChatState()
+    welcome = {"type": "welcome", "nick": "a", "room": "r",
+               "users": ["a", "b"], "topic": "", "op": "b", "history": []}
+    logic.apply_frame(st, welcome)
+    assert st.op == "b"
+    logic.apply_frame(st, {"type": "leave", "nick": "b"})
+    logic.apply_frame(st, {"type": "op", "nick": "a"})
+    assert (st.op, st.users) == ("a", ["a"])
