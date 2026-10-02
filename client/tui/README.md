@@ -24,16 +24,27 @@ python3 -m venv .venv
 ```
 
 Layout: message pane, user list (right, terminals 60+ columns wide), a
-status line (own nick, active omit list) and the input line.
+status line (own nick, active omit list, room topic) and the input line.
 
 ## Commands
 
-| Input             | Effect                                              |
-|-------------------|-----------------------------------------------------|
-| `text`            | send as `say`, with the current omit list           |
-| `/omit alice bob` | set the sticky omit list                            |
-| `/omit`           | clear the omit list                                 |
-| `/quit`           | exit                                                |
+| Input               | Effect                                            |
+|---------------------|---------------------------------------------------|
+| `text`              | send as `say`, with the current omit list         |
+| `/help`             | list commands (local)                             |
+| `/omit alice bob`   | set the sticky omit list                          |
+| `/omit`             | clear the omit list                               |
+| `/me text`          | send an action, shown as `* nick text`            |
+| `/kick nick [why]`  | remove a user (room operator only)                |
+| `/topic`            | show the current topic (local)                    |
+| `/topic text`       | set the room topic                                |
+| `//text`            | send a message starting with a literal `/`        |
+| `/quit`             | exit                                              |
+
+Unknown commands are reported locally and never sent. Tab completes the
+word being typed after `/omit ` or `/kick ` against the users in the room
+(case-insensitive prefix; press Tab again to cycle). If a `kick` frame
+names you, the reason is shown, the client stops and any key exits.
 
 Masked messages are dimmed and tagged `[masked]`. Your own messages show
 `[hidden from: ...]` when anyone was omitted. After a disconnect, press
