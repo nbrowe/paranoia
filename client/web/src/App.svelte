@@ -1,0 +1,68 @@
+<!--
+  Root component: owns the chat state, wires the WebSocket connection to
+  the reducer in lib/state.js, and lays out header, timeline, user list
+  and input. Scope: layout and wiring only. Limitations: single room per
+  page load (taken from ?room=).
+-->
+<script>
+  import { connect } from './lib/connection.js'
+  import { wsUrl, buildSay } from './lib/protocol.js'
+  import {
+    initialState, applyFrame, setStatus, toggleOmit, clearOmit,
+  } from './lib/state.js'
+  import MessageList from './components/MessageList.svelte'
+  import UserList from './components/UserList.svelte'
+  import MessageInput from './components/MessageInput.svelte'
+
+  // Raw state: the reducer returns fresh objects, no deep proxying needed.
+  let s = $state.raw(initialState())
+  let conn
+
+  $effect(() => {
+    conn = connect({
+      url: wsUrl(location, import.meta.env.VITE_WS_URL),
+      onFrame: (frame) => { s = applyFrame(s, frame) },
+      onStatus: (status) => { s = setStatus(s, status) },
+    })
+    return () => conn.close()
+  })
+
+  const badge = {
+    open: 'text-bg-success',
+    connecting: 'text-bg-warning',
+    disconnected: 'text-bg-danger',
+  }
+
+  /**
+   * Send the text with the current omit list.
+   * @param {string} text raw input
+   * @returns {boolean} true if the frame went out
+   */
+  function send(text) {
+    const frame = buildSay(text, s.omit)
+    return frame !== null && conn.send(frame)
+  }
+</script>
+
+<div class="d-flex flex-column vh-100">
+  <header class="d-flex align-items-center gap-2 p-2 border-bottom">
+    <strong>Paranoia</strong>
+    {#if s.room}<span class="text-muted">#{s.room}</span>{/if}
+    <span class="ms-auto">
+      {#if s.nick}you are <strong>{s.nick}</strong>{/if}
+      <span class="badge {badge[s.status]}">{s.status}</span>
+    </span>
+  </header>
+
+  <div class="d-flex flex-grow-1 overflow-hidden">
+    <MessageList items={s.items} nick={s.nick} />
+    <UserList
+      users={s.users} nick={s.nick} omit={s.omit}
+      ontoggle={(n) => { s = toggleOmit(s, n) }} />
+  </div>
+
+  <MessageInput
+    omit={s.omit} disabled={s.status !== 'open'} onsend={send}
+    onclear={() => { s = clearOmit(s) }}
+    onremove={(n) => { s = toggleOmit(s, n) }} />
+</div>
