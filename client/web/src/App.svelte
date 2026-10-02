@@ -1,7 +1,7 @@
 <!--
   Root component: owns the chat state, wires the WebSocket connection to
   the reducer in lib/state.js, and lays out header (logo mark, title,
-  room, status dot, theme, topic), timeline, user list and input. Input
+  room, status dot, settings, topic), timeline, user list and input. Input
   lines (text and slash commands) go through lib/commands.js. A kick of
   our own nick closes the socket for good. Scope: layout and wiring only. Limitations: single room per page load (taken from
   ?room=).
@@ -17,7 +17,7 @@
   import MessageList from './components/MessageList.svelte'
   import UserList from './components/UserList.svelte'
   import MessageInput from './components/MessageInput.svelte'
-  import ThemeToggle from './components/ThemeToggle.svelte'
+  import SettingsMenu from './components/SettingsMenu.svelte'
 
   // Raw state: the reducer returns fresh objects, no deep proxying needed.
   let s = $state.raw(initialState())
@@ -74,7 +74,7 @@
         class="status-dot rounded-circle flex-shrink-0 {dot[s.status]}"
         role="img" aria-label={label[s.status]} title={label[s.status]}
         data-testid="status"></span>
-      <ThemeToggle />
+      <SettingsMenu />
     </span>
     {#if s.topic}
       <div

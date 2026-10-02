@@ -80,8 +80,11 @@ origin, so no build-time URL is needed. Quick local check:
 | `src/App.svelte`, `src/components/` | UI wiring and presentation       |
 
 The header shows connection status as a small dot (green online, amber
-connecting, red offline; the word is its tooltip and `aria-label`). It also has a theme toggle button (`data-bs-theme` on `<html>`). With
-no saved choice the scheme follows local time (dark 18:00-06:00, hours in
+connecting, red offline; the word is its tooltip and `aria-label`). The gear button opens the settings menu
+(`src/components/SettingsMenu.svelte`): a popover under the button on
+md+ screens, a centred dialog with a backdrop on phones; Escape or an
+outside click closes it. It holds the theme toggle (`data-bs-theme` on
+`<html>`) and a `Build <id>` line. With no saved choice the scheme follows local time (dark 18:00-06:00, hours in
 `src/lib/theme.js`); clicking flips it and keeps that choice in
 `localStorage`. An inline script in `index.html` applies the same rule
 before first paint.

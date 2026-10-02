@@ -1,12 +1,13 @@
 /*
  * E2E: the page fits a phone-width viewport.
- * Scope: no horizontal page overflow at 390px and 320px (header incl.), the collapsed "Users (N)"
+ * Scope: no horizontal page overflow at 390px and 320px (header incl.,
+ * also with the settings dialog open) and 1280px (settings popover), the collapsed "Users (N)"
  * toggle that expands the list inline, and a long user list scrolling in
  * its own bounded box (phone and desktop) while the timeline and input
  * stay reachable. Limitations: two widths only; no visual diffs.
  */
 import { test, expect } from '@playwright/test'
-import { User, uniqueRoom, addLurkers } from '../lib/user.js'
+import { User, uniqueRoom, addLurkers, openSettings } from '../lib/user.js'
 
 /**
  * Open the app in a phone-width context.
@@ -116,13 +117,33 @@ for (const width of [320, 390]) {
         headerOverflow: h.scrollWidth - h.clientWidth,
         logoRight: logo.right,
         logoVisible: logo.width > 0,
-        themeRight: r(h.querySelector("[data-testid=theme]")).right,
+        settingsRight: r(h.querySelector('[data-testid=settings]')).right,
       }
     })
     expect(m.overflow).toBe(0)
     expect(m.headerOverflow).toBe(0)
     expect(m.logoVisible).toBe(true)
-    expect(m.themeRight).toBeLessThanOrEqual(width)
+    expect(m.settingsRight).toBeLessThanOrEqual(width)
+    await page.context().close()
+  })
+}
+
+/**
+ * Horizontal page overflow in px.
+ * @param {import('@playwright/test').Page} page page
+ * @returns {Promise<number>} scrollWidth minus clientWidth
+ */
+const overflowOf = (page) => page.evaluate(() =>
+  document.documentElement.scrollWidth - document.documentElement.clientWidth)
+
+for (const width of [320, 390, 1280]) {
+  test(`open settings menu fits at ${width}px`, async ({ browser }) => {
+    const page = await phone(browser, uniqueRoom(), width)
+    const menu = await openSettings(page)
+    const b = await menu.boundingBox()
+    expect(b.x).toBeGreaterThanOrEqual(0)
+    expect(b.x + b.width).toBeLessThanOrEqual(width)
+    expect(await overflowOf(page)).toBe(0)
     await page.context().close()
   })
 }

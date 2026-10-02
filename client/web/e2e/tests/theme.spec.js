@@ -1,5 +1,5 @@
 /*
- * E2E: the theme toggle button.
+ * E2E: the theme toggle button (inside the settings menu, opened first).
  * Scope: with no saved choice the scheme follows local time (dark
  * 18:00-06:00, via a Playwright clock override, ignoring the OS scheme),
  * clicking flips it and the explicit choice survives a reload and beats
@@ -8,7 +8,7 @@
  * background, not pixel-level styling.
  */
 import { test, expect } from '@playwright/test'
-import { uniqueRoom } from '../lib/user.js'
+import { uniqueRoom, openSettings } from '../lib/user.js'
 
 const DARK_BG = 'rgb(33, 37, 41)'
 const LIGHT_BG = 'rgb(255, 255, 255)'
@@ -52,8 +52,8 @@ test('click flips, persists across reload and beats the clock',
     const html = page.locator('html')
     const btn = page.getByTestId('theme')
     await expect(html).toHaveAttribute('data-bs-theme', 'light')
+    await openSettings(page)
     await expect(btn).toHaveAccessibleName('Switch to dark theme')
-
     await btn.click()
     await expect(html).toHaveAttribute('data-bs-theme', 'dark')
     await expect(btn).toHaveAccessibleName('Switch to light theme')
@@ -62,6 +62,7 @@ test('click flips, persists across reload and beats the clock',
     await expect(page.getByTestId('status')).toHaveAttribute('title', 'online')
     await expect(html).toHaveAttribute('data-bs-theme', 'dark')
 
+    await openSettings(page)
     await page.getByTestId('theme').click()
     await expect(html).toHaveAttribute('data-bs-theme', 'light')
     await page.reload()
@@ -77,6 +78,7 @@ test('works without storage', async ({ browser }) => {
       })
     }))
   await expect(page.locator('html')).toHaveAttribute('data-bs-theme', 'dark')
+  await openSettings(page)
   await page.getByTestId('theme').click()
   await expect(page.locator('html')).toHaveAttribute('data-bs-theme', 'light')
   await page.context().close()

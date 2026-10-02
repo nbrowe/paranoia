@@ -15,7 +15,8 @@ the real server image, one browser context per chat user.
 | `tests/history.spec.js`   | late joiner sees history masked per recipient   |
 | `tests/theme.spec.js`     | theme toggle: time-of-day default (clock override), flip persists, no storage |
 | `tests/commands.spec.js`  | slash commands the server supports: /help, /omit, unknown, `//` |
-| `tests/layout.spec.js`    | 320/390px: header and page do not overflow, users toggle, long list scrolls in its box |
+| `tests/layout.spec.js`    | 320/390px: header and page do not overflow (also with settings open, and at 1280px), users toggle, long list scrolls in its box |
+| `tests/settings.spec.js`  | settings menu: open/close by click, outside click, Escape, phone backdrop and close button; theme toggle inside; build id line |
 
 ## Layout
 
