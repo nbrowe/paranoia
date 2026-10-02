@@ -1,0 +1,17 @@
+#!/bin/sh
+# Run npm (or any command after `--`) inside a rootless Podman container.
+# Purpose: Node is not installed on the host; all JS tooling runs here.
+# Scope: mounts client/web at /app; publishes 5173 for the Vite dev server.
+# Limitations: needs Podman and network access to pull the image once.
+#   Override the image with NODE_IMAGE; extra podman flags with PODMAN_ARGS.
+#   Inside the container the host is reachable as host.containers.internal
+#   (see README for pointing the dev proxy at a host-side server).
+#   Usage: ./npmw run dev | ./npmw test | ./npmw -- node -v
+IMAGE="${NODE_IMAGE:-docker.io/library/node:24-alpine}"
+cd "$(dirname "$0")" || exit 1
+if [ "$1" = "--" ]; then shift; CMD="$*"; else CMD="npm $*"; fi
+TTY=""
+[ -t 0 ] && TTY="-it"
+# shellcheck disable=SC2086
+exec podman run --rm $TTY -v "$PWD":/app:Z -w /app -p 5173:5173 \
+  -e VITE_PROXY_TARGET -e VITE_WS_URL $PODMAN_ARGS "$IMAGE" sh -c "$CMD"
