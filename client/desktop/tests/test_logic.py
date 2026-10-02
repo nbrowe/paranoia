@@ -172,10 +172,10 @@ def test_complete_scope():
 
 
 def test_mark_user_and_op_tracking():
-    """`*` marks self, `@` the operator; op follows welcome/op/leave."""
+    """`@` prefixes the operator, `*` marks self; op follows frames."""
     assert logic.mark_user("a", "a", "b") == "a*"
-    assert logic.mark_user("b", "a", "b") == "b@"
-    assert logic.mark_user("a", "a", "a") == "a*@"
+    assert logic.mark_user("b", "a", "b") == "@b"
+    assert logic.mark_user("a", "a", "a") == "@a*"
     st = logic.ChatState()
     welcome = {"type": "welcome", "nick": "a", "room": "r",
                "users": ["a", "b"], "topic": "", "op": "b", "history": []}

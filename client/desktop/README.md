@@ -33,8 +33,8 @@ python3 -m venv .venv
 - Omit users by selecting them in the user list (click, ctrl-click for
   several). The selection is the sticky omit list sent with every message;
   the status bar shows it. Omitted users see your text as `*`.
-- The user list marks you with `*` and the room operator with `@`
-  (`pikachu*@` if both); markers are display-only.
+- The user list marks you with a trailing `*` and the room operator
+  with a leading `@` (`@pikachu*` if both); markers are display-only.
 - Commands (`/help` lists them in the client):
   - `/omit alice bob` sets the omit list (selection follows), `/omit` clears it.
   - `/me <text>` sends an action, shown as `* nick text`.
