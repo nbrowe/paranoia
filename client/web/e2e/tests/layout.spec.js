@@ -50,9 +50,9 @@ test('many users: list scrolls in its own box, rest reachable',
   async ({ browser }) => {
     const room = uniqueRoom()
     const page = await phone(browser, room)
-    await addLurkers(page, room, 24)
+    await addLurkers(page, room, 60)
     const toggle = page.getByTestId('user-toggle')
-    await expect(toggle).toHaveText(/Users \(25\)/)
+    await expect(toggle).toHaveText(/Users \(61\)/)
     await toggle.click()
 
     const body = page.locator('#user-list-body')
