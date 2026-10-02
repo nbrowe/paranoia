@@ -42,10 +42,27 @@ EOF
   exit "${1:-0}"
 }
 
-# Exec a client: run_client <dir> <module> [args...].
+# Create client/<name>/.venv if missing and (re)install requirements.txt
+# whenever its checksum differs from the stamp stored in the venv.
+bootstrap() {
+  local dir="$ROOT/client/$1" venv="$ROOT/client/$1/.venv" sum
+  sum="$(cksum <"$dir/requirements.txt")"
+  if [ -x "$venv/bin/python" ] &&
+    [ "$(cat "$venv/.requirements.stamp" 2>/dev/null)" = "$sum" ]; then
+    return 0
+  fi
+  echo "paranoia: setting up $1 (first run or requirements changed)..." >&2
+  [ -x "$venv/bin/python" ] || "$PY" -m venv "$venv"
+  "$venv/bin/pip" install -q -r "$dir/requirements.txt" ||
+    die "pip install failed for $1; fix the error above and re-run"
+  printf '%s\n' "$sum" >"$venv/.requirements.stamp"
+}
+
+# Check, bootstrap and exec a client: run_client <dir> <module> [args...].
 run_client() {
   local name="$1" module="$2"
   shift 2
+  bootstrap "$name"
   cd "$ROOT/client/$name"
   # Own --url goes first so an explicit --url in "$@" overrides it.
   exec "$ROOT/client/$name/.venv/bin/python" -m "$module" \
