@@ -2,6 +2,7 @@
 
 Purpose: draw state and translate keystrokes into protocol actions.
 Scope: single-room chat loop; all decisions delegate to logic.py.
+Handles /help /omit /me /kick /topic /quit and Tab nick completion.
 Limitations: no scrollback (shows the newest lines), no cursor movement
 inside the input line (type, backspace, enter), not unit tested.
 """
@@ -38,6 +39,8 @@ class App:
         self.omit = []
         self.lines = []
         self.buf = ""
+        self.topic = ""
+        self.tab = None  # logic.Completion while cycling with Tab
         self.closed = False
 
     def add(self, line):
@@ -54,8 +57,11 @@ class App:
         if frame["type"] == "welcome":
             self.nick = frame["nick"]
         self.users = logic.update_users(self.users, frame)
+        self.topic = logic.update_topic(self.topic, frame)
         for line in logic.format_event(frame, self.nick):
             self.add(line)
+        if logic.is_self_kick(frame, self.nick):
+            self.closed = True  # server closes the socket; no reconnect
 
     def submit(self):
         """Handle the Enter key; returns True when the app should exit."""
@@ -63,23 +69,45 @@ class App:
         self.buf = ""
         if cmd.kind == "quit":
             return True
-        if cmd.kind == "omit":
-            self.omit = cmd.arg
-        elif cmd.kind == "unknown":
-            self.add(logic.Line("error", f"! unknown command {cmd.arg}"))
-        elif cmd.kind == "say":
-            self.send(cmd.arg)
+        self.run_command(cmd)
         return False
 
-    def send(self, text):
-        """Send a say frame with the sticky omit list."""
+    def run_command(self, cmd):
+        """Carry out a parsed non-quit Command."""
+        kind, arg = cmd
+        if kind == "omit":
+            self.omit = arg
+        elif kind == "help":
+            for text in logic.HELP:
+                self.add(logic.Line("notice", text))
+        elif kind == "usage":
+            self.add(logic.Line("error", f"! {arg}"))
+        elif kind == "unknown":
+            self.add(logic.Line("error", f"! unknown command {arg}"))
+        elif kind == "topic" and arg is None:
+            shown = self.topic or "(none)"
+            self.add(logic.Line("notice", f"* topic: {shown}"))
+        elif kind == "topic":
+            self.transmit(logic.build_topic(arg))
+        elif kind == "kick":
+            self.transmit(logic.build_kick(*arg))
+        elif kind in ("say", "me"):
+            self.transmit(logic.build_say(arg, self.omit, kind == "me"))
+
+    def transmit(self, raw):
+        """Send a prebuilt frame, ignoring a closed socket."""
         try:
-            self.ws.send(logic.build_say(text, self.omit))
+            self.ws.send(raw)
         except ConnectionClosed:
             pass  # reader thread reports the disconnect
 
     def on_key(self, key):
         """Handle one key; returns True when the app should exit."""
+        if key == "\t":
+            self.buf, self.tab = logic.complete(
+                self.buf, self.users, self.nick, self.tab)
+            return False
+        self.tab = None
         if key in ("\n", "\r") or key == curses.KEY_ENTER:
             return self.submit()
         if key in ("\x7f", "\b") or key == curses.KEY_BACKSPACE:
@@ -116,7 +144,7 @@ class App:
             pane = width - SIDEBAR_WIDTH
             self.draw_sidebar(rows, pane + 1)
         self.draw_pane(rows, pane - 1)
-        status = logic.status_text(self.nick, self.omit)
+        status = logic.status_text(self.nick, self.omit, self.topic)
         self.scr.addstr(rows, 0, status[:width - 1].ljust(width - 1),
                         curses.A_REVERSE)
         prompt = "> " + self.buf

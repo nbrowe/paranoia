@@ -19,10 +19,33 @@ def test_parse_omit_sets_clears_dedups():
     assert logic.parse_input("/omit") == ("omit", [])
 
 
+def test_parse_new_commands():
+    """/help, /me, /topic, /kick and the // escape parse as specified."""
+    assert logic.parse_input("/help").kind == "help"
+    assert logic.parse_input("/me waves  hi") == ("me", "waves  hi")
+    assert logic.parse_input("/me").kind == "usage"
+    assert logic.parse_input("/topic") == ("topic", None)
+    assert logic.parse_input("/topic new  title") == ("topic", "new  title")
+    assert logic.parse_input("/kick bob") == ("kick", ("bob", ""))
+    assert logic.parse_input("/kick bob be  nice") == (
+        "kick", ("bob", "be  nice"))
+    assert logic.parse_input("/kick").kind == "usage"
+    assert logic.parse_input("//shrug") == ("say", "/shrug")
+
+
 def test_build_say_includes_omit_only_when_set():
     """The omit key is absent for an empty list."""
     assert json.loads(logic.build_say("x", [])) == {"type": "say", "text": "x"}
     assert json.loads(logic.build_say("x", ["a"]))["omit"] == ["a"]
+
+
+def test_build_action_topic_kick():
+    """New client frames carry only the documented fields."""
+    assert json.loads(logic.build_say("x", [], action=True))["action"] is True
+    assert json.loads(logic.build_topic("hi")) == {"type": "topic",
+                                                   "text": "hi"}
+    assert json.loads(logic.build_kick("a")) == {"type": "kick", "nick": "a"}
+    assert json.loads(logic.build_kick("a", "why"))["reason"] == "why"
 
 
 def test_parse_frame_rejects_garbage():
@@ -78,3 +101,55 @@ def test_status_and_wrap():
     assert "a, b" in logic.status_text("me", ["a", "b"])
     assert logic.wrap("abcde", 2) == ["ab", "cd", "e"]
     assert logic.wrap("", 5) == [""]
+
+
+def test_new_frames_render():
+    """Action, topic, kick and op frames render; kick prunes the roster."""
+    act = {"ts": 0, "sender": "ash", "text": "waves", "action": True}
+    assert " * ash waves" in logic.format_message(act, "me").text
+    top = {"type": "topic", "nick": "a", "text": "hi"}
+    assert logic.format_event(top, "me")[0].text == "* a set the topic: hi"
+    assert "cleared" in logic.format_event({**top, "text": ""}, "me")[0].text
+    kick = {"type": "kick", "nick": "b", "by": "a", "reason": "spam"}
+    assert logic.format_event(kick, "me")[0].text == \
+        "* b was kicked by a: spam"
+    assert logic.format_event({**kick, "nick": "me"}, "me")[0].style == "error"
+    assert logic.is_self_kick({**kick, "nick": "me"}, "me")
+    assert not logic.is_self_kick(kick, "me")
+    assert logic.update_users(["a", "b"], kick) == ["a"]
+    assert "operator" in logic.format_event(
+        {"type": "op", "nick": "c"}, "me")[0].text
+
+
+def test_topic_state():
+    """welcome and topic frames set the stored topic; others keep it."""
+    assert logic.update_topic("", {"type": "welcome", "topic": "t"}) == "t"
+    assert logic.update_topic("t", {"type": "topic", "text": "u"}) == "u"
+    assert logic.update_topic("t", {"type": "join"}) == "t"
+    welcome = {"type": "welcome", "nick": "me", "room": "r", "users": [],
+               "topic": "t", "history": []}
+    assert "topic: t" in logic.format_event(welcome, "me")[1].text
+    assert "topic: t" in logic.status_text("me", [], "t")
+
+
+def test_complete_prefix_and_cycle():
+    """Tab completes case-insensitively, then cycles on repeats."""
+    users = ["Bob", "bill", "me", "zed"]
+    buf, st = logic.complete("/omit b", users, "me")
+    assert buf == "/omit Bob"
+    buf, st = logic.complete(buf, users, "me", st)
+    assert buf == "/omit bill"
+    buf, st = logic.complete(buf, users, "me", st)
+    assert buf == "/omit Bob"
+
+
+def test_complete_scope_and_exclusions():
+    """Empty word lists everyone else; used and own nicks are skipped."""
+    users = ["a", "b", "me"]
+    assert logic.complete("/omit ", users, "me")[0] == "/omit a"
+    assert logic.complete("/omit a ", users, "me")[0] == "/omit a b"
+    assert logic.complete("/omit q", users, "me") == ("/omit q", None)
+    assert logic.complete("/omit m", users, "me") == ("/omit m", None)
+    assert logic.complete("hello b", users, "me") == ("hello b", None)
+    assert logic.complete("/kick b", users, "me")[0] == "/kick b"
+    assert logic.complete("/kick a rude b", users, "me")[1] is None
