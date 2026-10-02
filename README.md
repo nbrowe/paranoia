@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="client/web/public/logo.svg" alt="Paranoia logo: one silhouette whispering to another" width="240">
+  <img src="client/web/public/logo.svg" alt="Paranoia logo: six circles in a hexagon, one orange" width="240">
 </p>
 
 # Paranoia
