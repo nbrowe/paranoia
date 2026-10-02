@@ -76,11 +76,29 @@ def parse_input(raw):
     return Command("unknown", cmd)
 
 
-def build_say(text, omit):
-    """Build the JSON text of a `say` frame; `omit` is sent when non-empty."""
+def build_say(text, omit, action=False):
+    """Build the JSON text of a `say` frame.
+
+    `omit` is sent when non-empty; `action` marks a /me message.
+    """
     frame = {"type": "say", "text": text}
     if omit:
         frame["omit"] = list(omit)
+    if action:
+        frame["action"] = True
+    return json.dumps(frame)
+
+
+def build_topic(text):
+    """Build the JSON text of a `topic` frame."""
+    return json.dumps({"type": "topic", "text": text})
+
+
+def build_kick(nick, reason=""):
+    """Build the JSON text of a `kick` frame (reason omitted if empty)."""
+    frame = {"type": "kick", "nick": nick}
+    if reason:
+        frame["reason"] = reason
     return json.dumps(frame)
 
 

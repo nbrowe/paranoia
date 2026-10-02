@@ -39,6 +39,15 @@ def test_build_say_includes_omit_only_when_set():
     assert json.loads(logic.build_say("x", ["a"]))["omit"] == ["a"]
 
 
+def test_build_action_topic_kick():
+    """New client frames carry only the documented fields."""
+    assert json.loads(logic.build_say("x", [], action=True))["action"] is True
+    assert json.loads(logic.build_topic("hi")) == {"type": "topic",
+                                                   "text": "hi"}
+    assert json.loads(logic.build_kick("a")) == {"type": "kick", "nick": "a"}
+    assert json.loads(logic.build_kick("a", "why"))["reason"] == "why"
+
+
 def test_parse_frame_rejects_garbage():
     """Non-JSON and untyped frames yield None."""
     assert logic.parse_frame("nope") is None
