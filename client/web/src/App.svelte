@@ -1,7 +1,7 @@
 <!--
   Root component: owns the chat state, wires the WebSocket connection to
   the reducer in lib/state.js, and lays out header (logo mark, title,
-  room, status, theme, topic), timeline, user list and input. Input
+  room, status dot, settings, topic), timeline, user list and input. Input
   lines (text and slash commands) go through lib/commands.js. A kick of
   our own nick closes the socket for good. Scope: layout and wiring only. Limitations: single room per page load (taken from
   ?room=).
@@ -17,7 +17,7 @@
   import MessageList from './components/MessageList.svelte'
   import UserList from './components/UserList.svelte'
   import MessageInput from './components/MessageInput.svelte'
-  import ThemeToggle from './components/ThemeToggle.svelte'
+  import SettingsMenu from './components/SettingsMenu.svelte'
 
   // Raw state: the reducer returns fresh objects, no deep proxying needed.
   let s = $state.raw(initialState())
@@ -36,10 +36,10 @@
     return () => conn.close()
   })
 
-  const badge = {
-    open: 'text-bg-success',
-    connecting: 'text-bg-warning',
-    disconnected: 'text-bg-danger',
+  const dot = {
+    open: 'bg-success',
+    connecting: 'bg-warning',
+    disconnected: 'bg-danger',
   }
   const label = {
     open: 'online',
@@ -70,9 +70,11 @@
       <span class="text-truncate">
         <span class="d-none d-sm-inline">you are</span>
         <strong data-testid="nick">{s.nick ?? '—'}</strong></span>
-      <span class="badge {badge[s.status]}" data-testid="status">
-        {label[s.status]}</span>
-      <ThemeToggle />
+      <span
+        class="status-dot rounded-circle flex-shrink-0 {dot[s.status]}"
+        role="img" aria-label={label[s.status]} title={label[s.status]}
+        data-testid="status"></span>
+      <SettingsMenu />
     </span>
     {#if s.topic}
       <div
@@ -86,7 +88,7 @@
     class="panes d-flex flex-column flex-md-row flex-grow-1">
     <MessageList items={s.items} nick={s.nick} />
     <UserList
-      users={s.users} nick={s.nick} omit={s.omit}
+      users={s.users} nick={s.nick} op={s.op} omit={s.omit}
       ontoggle={(n) => { s = toggleOmit(s, n) }} />
   </div>
 
@@ -104,6 +106,11 @@
   }
   .who {
     min-width: 0;
+  }
+  .status-dot {
+    display: inline-block;
+    width: 0.75rem;
+    height: 0.75rem;
   }
   /* Phones: the pane scrolls so the timeline keeps a usable minimum
      height beside the (height-bounded) user list. */

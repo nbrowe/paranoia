@@ -146,6 +146,11 @@ describe('/topic', () => {
       { type: 'topic', text: 'new  plan' }])
   })
 
+  it('"-" sends a topic frame with empty text', () => {
+    expect(frames(handleInput(room(), '/topic -'))).toEqual([
+      { type: 'topic', text: '' }])
+  })
+
   it('alone shows the current topic locally', () => {
     const r = handleInput(room(), '/topic')
     expect(r.frames).toEqual([])

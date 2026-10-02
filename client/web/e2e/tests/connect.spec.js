@@ -1,7 +1,8 @@
 /*
  * E2E: a single user connects and sees the initial UI state.
- * Scope: nick (Pokemon slug), user list with self (pinned first), greeting
- * notice, no messages. Limitations: nick randomness is only checked against the pool.
+ * Scope: nick (Pokemon slug), user list with self (`*` after, pinned
+ * first) and operator (`@` before), greeting notice, no messages.
+ * Limitations: nick randomness is only checked against the pool.
  */
 import { test, expect } from '@playwright/test'
 import { User, uniqueRoom, isPokemon } from '../lib/user.js'
@@ -11,9 +12,13 @@ test('connects, shows nick, user list and greeting', async ({ browser }) => {
   const a = await User.join(browser, room)
 
   expect(isPokemon(a.nick)).toBe(true)
-  await expect(a.status).toHaveText('online')
+  await expect(a.status).toHaveAttribute('title', 'online')
+  await expect(a.status).toHaveAttribute('aria-label', 'online')
+  await expect(a.status).toHaveAttribute('role', 'img')
+  await expect(a.status).toHaveText('')
+  await expect(a.status).toHaveCSS('background-color', 'rgb(25, 135, 84)')
   await expect(a.userList).toContainText('Users (1)')
-  await expect(a.userList).toContainText(`${a.nick} (you)`)
+  await expect(a.userList).toContainText(`@${a.nick}*`)
   await expect(a.userList.getByRole('button')).toHaveCount(0)
 
   await expect(a.notices).toHaveCount(1)
@@ -32,6 +37,17 @@ test('own nick is first in the user list', async ({ browser }) => {
   for (const u of users) {
     await expect(u.userList).toContainText('Users (3)')
     await expect(u.userList.locator('#user-list-body > :first-child'))
-      .toHaveText(`${u.nick} (you)`)
+      .toHaveText(u === users[0] ? `@${u.nick}*` : `${u.nick}*`)
   }
+})
+
+test('the room operator (oldest user) is marked with @', async ({ browser }) => {
+  const room = uniqueRoom()
+  const op = await User.join(browser, room)
+  const b = await User.join(browser, room)
+  const opBtn = b.userList.getByRole('button', { name: op.nick, exact: true })
+  await expect(opBtn).toHaveText(`@${op.nick}`)
+  await expect(opBtn).toHaveAttribute('title', `${op.nick} (operator)`)
+  const own = b.userList.getByRole('group', { name: `${b.nick} (you)` })
+  await expect(own).toHaveText(`${b.nick}*`)
 })

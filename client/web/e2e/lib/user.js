@@ -23,6 +23,19 @@ export function uniqueRoom() {
 }
 
 /**
+ * Open the settings menu (no-op if already open).
+ * @param {import('@playwright/test').Page} page page
+ * @returns {Promise<import('@playwright/test').Locator>} the menu
+ */
+export async function openSettings(page) {
+  const btn = page.getByTestId('settings')
+  if ((await btn.getAttribute('aria-expanded')) !== 'true') await btn.click()
+  const menu = page.getByTestId('settings-menu')
+  await expect(menu).toBeVisible()
+  return menu
+}
+
+/**
  * Check that a nick is a known Pokemon slug.
  * @param {string} nick nickname to check
  * @returns {boolean} true if it is in the server's pool
@@ -75,7 +88,7 @@ export class User {
     const context = await browser.newContext()
     const user = new User(await context.newPage())
     await user.page.goto(`/?room=${room}`)
-    await expect(user.status).toHaveText('online')
+    await expect(user.status).toHaveAttribute('title', 'online')
     user.nick = (await user.page.getByTestId('nick').textContent()).trim()
     return user
   }

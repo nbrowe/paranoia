@@ -16,13 +16,13 @@ test('shows disconnected, recovers and works again', async ({ browser }) => {
   await expect(a.messages).toHaveCount(1)
 
   await restartServer()
-  await expect(a.status).toHaveText('online', { timeout: 20000 })
+  await expect(a.status).toHaveAttribute('title', 'online', { timeout: 20000 })
 
   // A restart wipes state, so the welcome frame resets the timeline.
   const nick = (await a.page.getByTestId('nick').textContent()).trim()
   expect(isPokemon(nick)).toBe(true)
   await expect(a.messages).toHaveCount(0)
-  await expect(a.userList).toContainText(`${nick} (you)`)
+  await expect(a.userList).toContainText(`${nick}*`)
   await expect(a.userList).toContainText('Users (1)')
   await expect(a.input).toBeEnabled()
 
@@ -39,7 +39,9 @@ test('shows a disconnected state while the server is down',
     await a.omit(b.nick)
     await a.say('kept while down')
     await expect(a.messages).toHaveCount(1)
-    const down = expect(a.status).toHaveText('offline')
+    const down = expect(a.status).toHaveAttribute('title', 'offline')
+      .then(() => expect(a.status)
+        .toHaveCSS('background-color', 'rgb(220, 53, 69)'))
     await restartServer()
     await down
 
@@ -51,7 +53,8 @@ test('shows a disconnected state while the server is down',
     await expect(a.omitBar).toHaveText('Omitting nobody')
     await expect(a.message(a.nick, 'kept while down')).toHaveCount(1)
 
-    await expect(a.status).toHaveText('online', { timeout: 20000 })
+    await expect(a.status)
+      .toHaveAttribute('title', 'online', { timeout: 20000 })
     await expect(nick).not.toHaveText('—')
     await expect(a.notices.filter({ hasText: 'Disconnected' })).toHaveCount(0)
   })

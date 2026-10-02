@@ -1,7 +1,10 @@
 <!--
   Sidebar listing users in the room. Each other user is a toggle button
   (aria-pressed) that adds/removes them from the sticky omit list; your
-  own nick is a plain chip and cannot be omitted. Buttons sit in a
+  own nick is a plain chip and cannot be omitted. Names carry display-only
+  markers: `@` before the room operator's, `*` after your own (`@nick*`
+  for both); the title (and the chip's aria-label) spell them out and the
+  omit logic only ever sees the bare nick. Buttons sit in a
   three-column grid of equal cells (each at most a third of the list, so
   rows line up and wrap); long nicks truncate (full nick in the title).
   Responsive: below md the list is collapsed behind a "Users (N)" toggle
@@ -12,7 +15,10 @@
   the parent.
 -->
 <script>
-  let { users, nick, omit, ontoggle } = $props()
+  import { marks, describe } from '../lib/marks.js'
+
+  let { users, nick, op = null, omit, ontoggle } = $props()
+
   let open = $state(false)
 </script>
 
@@ -33,18 +39,23 @@
     class="grid {open ? 'd-grid' : 'd-none'} d-md-grid gap-1
       mt-2 mt-md-0">
     {#each users as u (u)}
+      {@const m = marks(u, nick, op)}
+      {@const d = describe(u, nick, op)}
       {#if u === nick}
         <span
           class="user border rounded bg-body-tertiary fw-bold small px-2
-            py-1 text-center" title={u}>{u} (you)</span>
+            py-1 text-center" role="group" title={d} aria-label={d}
+          >{m.pre}{u}{m.post}</span>
       {:else}
         <button
-          type="button" title={u} aria-pressed={omit.includes(u)}
+          type="button" title={d} aria-pressed={omit.includes(u)}
           class="user btn btn-sm {omit.includes(u)
             ? 'btn-danger text-decoration-line-through'
             : 'btn-outline-secondary'}"
           onclick={() => ontoggle(u)}>
-          <span aria-hidden="true">{omit.includes(u) ? '⊘ ' : ''}</span>{u}
+          <span aria-hidden="true"
+            >{omit.includes(u) ? '⊘ ' : ''}{m.pre}</span
+          >{u}<span aria-hidden="true">{m.post}</span>
         </button>
       {/if}
     {/each}

@@ -15,6 +15,10 @@ cd "$(dirname "$0")" || exit 1
 if [ "$1" = "--" ]; then shift; CMD="$*"; else CMD="npm $*"; fi
 TTY=""
 [ -t 0 ] && TTY="-it"
+# Build id for the settings menu: first 16 chars of HEAD (the Node
+# container has no git); `dev` when git is unavailable.
+VITE_BUILD_ID="${VITE_BUILD_ID:-$(git rev-parse HEAD 2>/dev/null | cut -c1-16)}"
+export VITE_BUILD_ID="${VITE_BUILD_ID:-dev}"
 PORT=""
 case "$CMD" in
   "npm run dev"* | "npm run preview"*)
@@ -24,4 +28,5 @@ case "$CMD" in
 esac
 # shellcheck disable=SC2086
 exec podman run --rm $TTY -v "$PWD":/app:z -w /app $PORT \
-  -e VITE_PROXY_TARGET -e VITE_WS_URL $PODMAN_ARGS "$IMAGE" sh -c "$CMD"
+  -e VITE_PROXY_TARGET -e VITE_WS_URL -e VITE_BUILD_ID \
+  $PODMAN_ARGS "$IMAGE" sh -c "$CMD"

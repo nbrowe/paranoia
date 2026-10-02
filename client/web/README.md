@@ -46,6 +46,12 @@ container.
 | `NPMW_BIND`         | `127.0.0.1`                  | host address; `0.0.0.0` exposes it to the LAN |
 | `VITE_WS_URL`       | derived from `location`      | override, e.g. `ws://h:8000/ws` |
 
+| `VITE_BUILD_ID`     | `git rev-parse HEAD`, first 16 chars (`dev` without git) | build id in the settings menu |
+
+`./npmw` and `e2e/run` compute `VITE_BUILD_ID` on the host (the Node
+container has no git) and pass it in; Vite bakes it into the bundle.
+For a raw `podman run` or CI build, export it yourself.
+
 `VITE_WS_URL` is baked in at build time. By default the client connects
 to `ws(s)://<page host>/ws?room=<room>`, where the room is the page's
 `?room=` query parameter (default `lobby`).
@@ -70,14 +76,23 @@ origin, so no build-time URL is needed. Quick local check:
 | `src/lib/commands.js`     | slash-command parsing and handling         |
 | `src/lib/connection.js`   | WebSocket with backoff reconnect           |
 | `src/lib/theme.js`        | theme: time default, toggle, storage       |
+| `src/lib/marks.js`        | user-list markers (`@` operator, `*` you)  |
 | `src/lib/*.test.js`       | Vitest unit tests (core logic only)        |
 | `src/App.svelte`, `src/components/` | UI wiring and presentation       |
 
-The header has a theme toggle button (`data-bs-theme` on `<html>`). With
-no saved choice the scheme follows local time (dark 18:00-06:00, hours in
+The header shows connection status as a small dot (green online, amber
+connecting, red offline; the word is its tooltip and `aria-label`). The gear button opens the settings menu
+(`src/components/SettingsMenu.svelte`): a popover under the button on
+md+ screens, a centred dialog with a backdrop on phones; Escape or an
+outside click closes it. It holds the theme toggle (`data-bs-theme` on
+`<html>`) and a `Build <id>` line. With no saved choice the scheme follows local time (dark 18:00-06:00, hours in
 `src/lib/theme.js`); clicking flips it and keeps that choice in
 `localStorage`. An inline script in `index.html` applies the same rule
 before first paint.
+
+The user list marks the room operator with `@` before the name and
+yourself with `*` after it (`@nick*` for both); the tooltip spells it
+out, and omitting works on the bare nick.
 
 ## Commands
 
@@ -90,7 +105,7 @@ conventions" in [docs/protocol.md](../../docs/protocol.md)):
 | `/omit [nick...]`      | set the sticky omit list; alone, clear it       |
 | `/me <text>`           | action message, shown as `* nick text`          |
 | `/kick <nick> [reason]`| remove a user (room operator only, server-checked) |
-| `/topic [text]`        | set the topic; alone, show it locally           |
+| `/topic [text]`        | set the topic; alone, show it locally; `-` clears it |
 | `//text`               | send `/text` literally                          |
 
 Anything else starting with `/` is reported locally as an unknown

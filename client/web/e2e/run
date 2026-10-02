@@ -37,7 +37,10 @@ podman build -q --format docker -t "$SERVER_IMAGE" \
   -f "$ROOT/server/Containerfile" "$ROOT/server"
 
 echo "== building web client"
-podman run --rm -v "$WEB":/app:z -w /app "$NODE_IMAGE" \
+# Build id for the settings menu; the Node container has no git.
+VITE_BUILD_ID="${VITE_BUILD_ID:-$(git -C "$HERE" rev-parse HEAD 2>/dev/null | cut -c1-16)}"
+export VITE_BUILD_ID="${VITE_BUILD_ID:-dev}"
+podman run --rm -e VITE_BUILD_ID -v "$WEB":/app:z -w /app "$NODE_IMAGE" \
   sh -c 'npm ci --no-audit --no-fund && npm run build'
 
 echo "== starting stack"
