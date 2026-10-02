@@ -1,16 +1,18 @@
 <!--
   Sidebar listing users in the room. Each other user has a checkbox that
-  toggles them in the sticky omit list. Limitations: stateless; the omit
-  list lives in the parent.
+  toggles them in the sticky omit list. Responsive: a short wrapping strip
+  under the timeline on narrow screens, a side column from md up.
+  Limitations: stateless; the omit list lives in the parent.
 -->
 <script>
   let { users, nick, omit, ontoggle } = $props()
 </script>
 
 <aside
-  class="border-start overflow-auto p-2" data-testid="user-list"
-  style="width: 12rem">
-  <div class="small text-muted mb-1">Users ({users.length}) - tick to omit</div>
+  class="users col-md-3 overflow-auto p-2
+    d-flex flex-wrap column-gap-3 d-md-block"
+  data-testid="user-list">
+  <div class="small text-muted mb-1 w-100">Users ({users.length}) - tick to omit</div>
   {#each users as u (u)}
     {#if u === nick}
       <div class="fw-bold">{u} (you)</div>
@@ -25,3 +27,17 @@
     {/if}
   {/each}
 </aside>
+
+<style>
+  .users {
+    max-height: 25vh;
+    border-top: var(--bs-border-width) solid var(--bs-border-color);
+  }
+  @media (min-width: 768px) {
+    .users {
+      max-height: none;
+      border-top: 0;
+      border-left: var(--bs-border-width) solid var(--bs-border-color);
+    }
+  }
+</style>
