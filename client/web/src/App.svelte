@@ -14,6 +14,7 @@
   import MessageList from './components/MessageList.svelte'
   import UserList from './components/UserList.svelte'
   import MessageInput from './components/MessageInput.svelte'
+  import ThemeSelect from './components/ThemeSelect.svelte'
 
   // Raw state: the reducer returns fresh objects, no deep proxying needed.
   let s = $state.raw(initialState())
@@ -60,6 +61,7 @@
       <span class="badge {badge[s.status]}" data-testid="status">
         {label[s.status]}</span>
     </span>
+    <ThemeSelect />
   </header>
 
   <div
