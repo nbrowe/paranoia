@@ -1,0 +1,17 @@
+# Build-context exclusions for the server image (keep identical to
+# .dockerignore). Tests and dev requirements are excluded: the image is
+# runtime-only, and they are not needed to serve.
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+tests/
+requirements-dev.txt
+README.md
+Containerfile
+.containerignore
+.dockerignore
