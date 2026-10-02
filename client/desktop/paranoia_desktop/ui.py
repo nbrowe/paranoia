@@ -90,7 +90,7 @@ class App:
         self._refresh_status()
 
     def _on_enter(self, _event):
-        """Handle the entry box: send a message or run /omit."""
+        """Handle the entry box: send a message or run a slash command."""
         parsed = logic.parse_input(self.entry.get())
         if parsed is None:
             return
@@ -98,12 +98,28 @@ class App:
         kind, arg = parsed
         if kind == "say":
             self._send(logic.build_say(arg, self.state.omit))
+        elif kind == "action":
+            self._send(logic.build_say(arg, self.state.omit, action=True))
         elif kind == "omit":
             self.state.omit = logic.normalize_omit(arg, self.state.nick)
             self._refresh_users()
             self._refresh_status()
+        elif kind == "kick":
+            self._send(logic.build_kick(*arg))
+        elif kind == "topic":
+            self._do_topic(arg)
+        elif kind == "help":
+            for line in logic.HELP:
+                self.show("notice", line)
         else:
             self.show("error", "! " + arg)
+
+    def _do_topic(self, text):
+        """/topic: show the current topic, or send a new one."""
+        if text is None:
+            self.show("notice", logic.format_topic(self.state.topic))
+        else:
+            self._send(logic.build_topic(text))
 
     def _send(self, frame):
         """Send a frame, or complain if the connection is gone."""

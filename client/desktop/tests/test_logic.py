@@ -13,6 +13,29 @@ def test_parse_input():
     assert logic.parse_input("/nope")[0] == "error"
 
 
+def test_parse_commands():
+    """/help, /me, /kick, /topic and the // escape."""
+    assert logic.parse_input("/help") == ("help", None)
+    assert logic.parse_input("/me waves  ") == ("action", "waves")
+    assert logic.parse_input("/me")[0] == "error"
+    assert logic.parse_input("/kick bob") == ("kick", ("bob", ""))
+    assert logic.parse_input("/kick bob be  nice") == (
+        "kick", ("bob", "be  nice"))
+    assert logic.parse_input("/kick")[0] == "error"
+    assert logic.parse_input("/topic") == ("topic", None)
+    assert logic.parse_input("/topic a b") == ("topic", "a b")
+    assert logic.parse_input("//omit x") == ("say", "/omit x")
+
+
+def test_build_frames():
+    """Action flag only present when set; topic and kick frames."""
+    assert "action" not in logic.build_say("x", [])
+    assert logic.build_say("x", [], action=True)["action"] is True
+    assert logic.build_topic("t") == {"type": "topic", "text": "t"}
+    assert logic.build_kick("b", "r") == {
+        "type": "kick", "nick": "b", "reason": "r"}
+
+
 def test_build_say_copies_omit():
     """The frame carries a copy of the omit list."""
     omit = ["a"]
@@ -77,3 +100,9 @@ def test_format_status():
     st = ChatState(nick="me", room="r", omit=["a", "b"])
     assert logic.format_status(st) == "you: me  room: r  omit: a, b"
     assert "omit: none" in logic.format_status(ChatState())
+
+
+def test_format_topic():
+    """Set and unset topics."""
+    assert logic.format_topic("hi") == "* topic: hi"
+    assert logic.format_topic("") == "* no topic set"

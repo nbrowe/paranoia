@@ -19,25 +19,65 @@ class ChatState:
     room: str = ""
     users: list = field(default_factory=list)
     omit: list = field(default_factory=list)
+    topic: str = ""
+    op: str = ""
+    kicked: bool = False
+
+
+HELP = [
+    "/help                 show this list",
+    "/omit [nick ...]      set the omit list; alone clears it",
+    "/me <text>            send an action (* nick text)",
+    "/kick <nick> [why]    remove a user (room operator only)",
+    "/topic [text]         show the topic, or set it",
+    "//text                send a literal /text",
+]
 
 
 def parse_input(line):
-    """Parse an entry-box line into ("say", text), ("omit", names) or
-    ("error", message). Returns None for blank input."""
+    """Parse an entry-box line into (kind, arg), or None for blank input.
+
+    Kinds: say/action (arg text), omit (names), kick ((nick, reason)),
+    topic (text or None to show), help (None), error (message)."""
     line = line.strip()
     if not line:
         return None
-    if not line.startswith("/"):
-        return ("say", line)
-    parts = line.split()
-    if parts[0] == "/omit":
-        return ("omit", parts[1:])
-    return ("error", f"unknown command {parts[0]} (try /omit alice bob)")
+    if not line.startswith("/") or line.startswith("//"):
+        return ("say", line[1:] if line.startswith("//") else line)
+    cmd, _, rest = line.partition(" ")
+    rest = rest.strip()
+    if cmd == "/omit":
+        return ("omit", rest.split())
+    if cmd == "/help":
+        return ("help", None)
+    if cmd == "/topic":
+        return ("topic", rest or None)
+    if cmd == "/me":
+        return ("action", rest) if rest else ("error", "usage: /me <text>")
+    if cmd == "/kick":
+        nick, _, reason = rest.partition(" ")
+        if not nick:
+            return ("error", "usage: /kick <nick> [reason]")
+        return ("kick", (nick, reason.strip()))
+    return ("error", f"unknown command {cmd} (try /help)")
 
 
-def build_say(text, omit):
+def build_say(text, omit, action=False):
     """Build a `say` frame carrying the sticky omit list."""
-    return {"type": "say", "text": text, "omit": list(omit)}
+    frame = {"type": "say", "text": text, "omit": list(omit)}
+    if action:
+        frame["action"] = True
+    return frame
+
+
+def build_topic(text):
+    """Build a `topic` frame (empty text clears the topic)."""
+    return {"type": "topic", "text": text}
+
+
+def build_kick(nick, reason=""):
+    """Build a `kick` frame."""
+    return {"type": "kick", "nick": nick, "reason": reason}
 
 
 def normalize_omit(names, own_nick):
@@ -56,6 +96,11 @@ def merge_selection(omit, users, selected):
     the selection."""
     kept = [n for n in omit if n not in users]
     return kept + [n for n in users if n in selected]
+
+
+def format_topic(topic):
+    """Local line describing the current topic."""
+    return f"* topic: {topic}" if topic else "* no topic set"
 
 
 def format_ts(ts):
