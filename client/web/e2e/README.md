@@ -14,6 +14,7 @@ the real server image, one browser context per chat user.
 | `tests/reconnect.spec.js` | server restart: offline (list/nick cleared), recovery, new nick |
 | `tests/history.spec.js`   | late joiner sees history masked per recipient   |
 | `tests/theme.spec.js`     | theme toggle: time-of-day default (clock override), flip persists, no storage |
+| `tests/commands.spec.js`  | slash commands the server supports: /help, /omit, unknown, `//` |
 | `tests/layout.spec.js`    | 320/390px: header and page do not overflow, users toggle, long list scrolls in its box |
 
 ## Layout

@@ -66,7 +66,8 @@ origin, so no build-time URL is needed. Quick local check:
 | Path                      | Role                                       |
 |---------------------------|--------------------------------------------|
 | `src/lib/state.js`        | reducer: frames and omit list -> state     |
-| `src/lib/protocol.js`     | ws URL derivation, `say` frame             |
+| `src/lib/protocol.js`     | ws URL derivation, say/topic/kick frames   |
+| `src/lib/commands.js`     | slash-command parsing and handling         |
 | `src/lib/connection.js`   | WebSocket with backoff reconnect           |
 | `src/lib/theme.js`        | theme: time default, toggle, storage       |
 | `src/lib/*.test.js`       | Vitest unit tests (core logic only)        |
@@ -77,6 +78,24 @@ no saved choice the scheme follows local time (dark 18:00-06:00, hours in
 `src/lib/theme.js`); clicking flips it and keeps that choice in
 `localStorage`. An inline script in `index.html` applies the same rule
 before first paint.
+
+## Commands
+
+The single message input takes slash commands (see "Client UX
+conventions" in [docs/protocol.md](../../docs/protocol.md)):
+
+| Input                  | Effect                                          |
+|------------------------|-------------------------------------------------|
+| `/help`                | list the commands (local, nothing is sent)      |
+| `/omit [nick...]`      | set the sticky omit list; alone, clear it       |
+| `/me <text>`           | action message, shown as `* nick text`          |
+| `/kick <nick> [reason]`| remove a user (room operator only, server-checked) |
+| `/topic [text]`        | set the topic; alone, show it locally           |
+| `//text`               | send `/text` literally                          |
+
+Anything else starting with `/` is reported locally as an unknown
+command. The topic is shown (truncated) in the header. Being kicked shows
+the reason and stops the client reconnecting; reload the page to rejoin.
 
 On reconnect the server assigns a new nickname and replays history, so
 each `welcome` fully resets the timeline; the omit selection is kept only
