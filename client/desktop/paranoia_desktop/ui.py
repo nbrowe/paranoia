@@ -150,15 +150,18 @@ class App:
 
     def _poll(self):
         """Drain network events on the Tk thread, then reschedule."""
+        users_changed = False
         for kind, payload in self.conn.poll():
             if kind == "frame":
                 for tag, line in logic.apply_frame(self.state, payload):
                     self.show(tag, line)
-                self._refresh_users()
+                users_changed |= logic.changes_user_list(payload)
             else:
                 self.connected = False
                 if not self.state.kicked:  # a kick is final, say no more
                     self.show("error", f"! {payload} (restart to reconnect)")
+        if users_changed:
+            self._refresh_users()
         self._refresh_status()
         self.root.after(POLL_MS, self._poll)
 

@@ -13,6 +13,9 @@ from collections import namedtuple
 from dataclasses import dataclass, field
 
 
+USER_FRAMES = ("welcome", "join", "leave", "kick", "op")
+
+
 @dataclass
 class ChatState:
     """Mutable view of the session: identity, room members, sticky omits."""
@@ -185,6 +188,11 @@ def apply_frame(state, frame):
         state.op = frame["nick"]
         return [("notice", f"* {frame['nick']} is now the operator")]
     return []
+
+
+def changes_user_list(frame):
+    """True when `frame` can alter the user list or its markers."""
+    return frame.get("type") in USER_FRAMES
 
 
 def _topic_line(frame):

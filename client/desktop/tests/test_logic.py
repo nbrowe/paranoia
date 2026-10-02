@@ -184,3 +184,11 @@ def test_mark_user_and_op_tracking():
     logic.apply_frame(st, {"type": "leave", "nick": "b"})
     logic.apply_frame(st, {"type": "op", "nick": "a"})
     assert (st.op, st.users) == ("a", ["a"])
+
+
+def test_changes_user_list():
+    """Only membership/op frames force a user list rebuild."""
+    for kind in ("welcome", "join", "leave", "kick", "op"):
+        assert logic.changes_user_list({"type": kind})
+    for kind in ("message", "topic", "error", "bogus"):
+        assert not logic.changes_user_list({"type": kind})
