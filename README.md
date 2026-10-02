@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="client/web/public/logo.svg" alt="Paranoia logo: one silhouette whispering to another" width="240">
+</p>
+
 # Paranoia
 
 Paranoia is a small group chat where every message can be hidden from
