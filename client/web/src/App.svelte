@@ -54,16 +54,20 @@
 </script>
 
 <div class="d-flex flex-column vh-100">
-  <header class="d-flex align-items-center gap-2 p-2 border-bottom">
+  <header class="d-flex flex-wrap align-items-center gap-2 p-2 border-bottom">
     <img src="/logo.svg" alt="" width="26" height="26">
     <strong>Paranoia</strong>
-    {#if s.room}<span class="text-muted text-truncate">#{s.room}</span>{/if}
-    <span class="ms-auto text-nowrap">
-      you are <strong data-testid="nick">{s.nick ?? '—'}</strong>
+    {#if s.room}
+      <span class="text-muted text-truncate room">#{s.room}</span>
+    {/if}
+    <span class="ms-auto d-flex align-items-center gap-2 mw-100 who">
+      <span class="text-truncate">
+        <span class="d-none d-sm-inline">you are</span>
+        <strong data-testid="nick">{s.nick ?? '—'}</strong></span>
       <span class="badge {badge[s.status]}" data-testid="status">
         {label[s.status]}</span>
+      <ThemeSelect />
     </span>
-    <ThemeSelect />
   </header>
 
   <div
@@ -81,6 +85,14 @@
 </div>
 
 <style>
+  /* Phones: the header wraps to a second line; long names truncate. */
+  .room {
+    flex: 1 1 4rem;
+    min-width: 0;
+  }
+  .who {
+    min-width: 0;
+  }
   /* Phones: the pane scrolls so the timeline keeps a usable minimum
      height beside the (height-bounded) user list. */
   .panes {
