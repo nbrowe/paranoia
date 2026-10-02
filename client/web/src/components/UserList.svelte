@@ -67,6 +67,11 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* Readable idle buttons in both themes (secondary text is too faint). */
+  .user.btn-outline-secondary {
+    --bs-btn-color: var(--bs-body-color);
+    --bs-btn-border-color: var(--bs-border-color);
+  }
   @media (min-width: 768px) {
     .users {
       border-top: 0;
