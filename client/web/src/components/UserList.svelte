@@ -3,10 +3,11 @@
   (aria-pressed) that adds/removes them from the sticky omit list; your
   own nick is a plain chip and cannot be omitted. Buttons sit in a
   three-column grid of equal cells (each at most a third of the list, so
-  rows line up and wrap); long nicks truncate (full nick in the title). Responsive: below md the list
-  is collapsed behind a "Users (N)" toggle and expands inline with a
-  bounded height; from md up it is a side column. Either way the grid
-  scrolls vertically when the buttons overflow it.
+  rows line up and wrap); long nicks truncate (full nick in the title).
+  Responsive: below md the list is collapsed behind a "Users (N)" toggle
+  and expands inline with a bounded height; from md up it is a side
+  column. Either way the grid scrolls vertically when the buttons
+  overflow it.
   Limitations: stateless apart from the toggle; the omit list lives in
   the parent.
 -->
