@@ -1,7 +1,10 @@
 """Tests for room join/leave and broadcast, using fake connections."""
 import asyncio
 
+import pytest
+
 from paranoia.nicknames import NICKNAMES
+from paranoia.protocol import ProtocolError
 from paranoia.room import Hub, Room
 from paranoia.storage import MemoryHistoryStore
 
@@ -12,10 +15,15 @@ class FakeConn:
     def __init__(self):
         """Start with no received frames."""
         self.frames = []
+        self.closed = False
 
     async def send_json(self, frame):
         """Record the frame."""
         self.frames.append(frame)
+
+    async def close(self):
+        """Record that the socket was closed."""
+        self.closed = True
 
 
 def make_room():
@@ -108,4 +116,46 @@ def test_set_topic_broadcasts_and_shows_in_welcome():
         assert c.frames[0]["topic"] == "plans"
         await room.set_topic(na, "")
         assert room.topic == "" and a.frames[-1]["text"] == ""
+    asyncio.run(go())
+
+
+def test_kick_notifies_all_and_closes_target_without_leave():
+    """kick goes to everyone incl. target; target gets no leave."""
+    async def go():
+        room = make_room()
+        a, b, c = FakeConn(), FakeConn(), FakeConn()
+        na, nb, nc = [await room.join(x) for x in (a, b, c)]
+        await room.kick(na, nb, "spam")
+        frame = {"type": "kick", "nick": nb, "by": na, "reason": "spam"}
+        assert a.frames[-1] == c.frames[-1] == b.frames[-1] == frame
+        assert b.closed and not a.closed and nb not in room.users
+        await room.leave(nb, b)  # the kicked handler's cleanup
+        assert a.frames[-1] == frame and room.op == na
+    asyncio.run(go())
+
+
+@pytest.mark.parametrize("who,target,code", [
+    (1, 0, "not_op"), (0, 0, "bad_target"), (0, None, "no_such_nick")])
+def test_kick_errors(who, target, code):
+    """Non-op, self-kick and unknown targets are refused untouched."""
+    async def go():
+        room = make_room()
+        conns = [FakeConn(), FakeConn()]
+        nicks = [await room.join(x) for x in conns]
+        tgt = "ghost" if target is None else nicks[target]
+        with pytest.raises(ProtocolError) as e:
+            await room.kick(nicks[who], tgt, "")
+        assert e.value.code == code and len(room.users) == 2
+        assert not any(x.closed for x in conns)
+    asyncio.run(go())
+
+
+def test_stale_leave_does_not_evict_reused_nick():
+    """A kicked connection's leave cannot remove a newer owner of nick."""
+    async def go():
+        room = make_room()
+        old, new = FakeConn(), FakeConn()
+        room.users = {"x": new}
+        await room.leave("x", old)
+        assert room.users == {"x": new}
     asyncio.run(go())

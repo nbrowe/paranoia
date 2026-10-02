@@ -10,6 +10,7 @@ import asyncio
 
 from paranoia.messages import render
 from paranoia.nicknames import pick_nickname
+from paranoia.protocol import ProtocolError
 
 
 class Room:
@@ -40,13 +41,36 @@ class Room:
         await self._broadcast({"type": "join", "nick": nick}, skip=nick)
         return nick
 
-    async def leave(self, nick):
-        """Remove nick, tell the others, and announce a new operator."""
+    async def leave(self, nick, conn=None):
+        """Remove nick, tell the others, and announce a new operator.
+
+        A no-op if conn is given and no longer owns nick (it was kicked,
+        and the nickname may already belong to a new connection).
+        """
+        if conn is not None and self.users.get(nick) is not conn:
+            return
         was_op = nick == self.op
         del self.users[nick]
         await self._broadcast({"type": "leave", "nick": nick})
         if was_op and self.users:
             await self._broadcast({"type": "op", "nick": self.op})
+
+    async def kick(self, nick, target, reason):
+        """Operator nick removes target; raise ProtocolError if refused.
+
+        Everyone (target included) gets a kick frame, then the target is
+        dropped without a leave frame and its socket is closed.
+        """
+        if nick != self.op:
+            raise ProtocolError("not_op", "only the operator can kick")
+        if target == nick:
+            raise ProtocolError("bad_target", "you cannot kick yourself")
+        if target not in self.users:
+            raise ProtocolError("no_such_nick", f"no such user: {target}")
+        await self._broadcast(
+            {"type": "kick", "nick": target, "by": nick, "reason": reason})
+        conn = self.users.pop(target)
+        await conn.close()
 
     async def set_topic(self, nick, text):
         """Set the room topic and tell everyone, including the setter."""

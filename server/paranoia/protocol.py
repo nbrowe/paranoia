@@ -39,6 +39,8 @@ def parse_frame(raw, max_text):
         return kind, _say(data, max_text)
     if kind == "topic":
         return kind, (_text(data, 0, MAX_FIELD),)
+    if kind == "kick":
+        return kind, _kick(data)
     raise ProtocolError("unknown_type", "unknown type")
 
 
@@ -48,6 +50,17 @@ def _text(data, low, high):
     if not isinstance(text, str) or not low <= len(text.strip()) <= high:
         raise ProtocolError("bad_text", f"text must be {low}-{high} chars")
     return text.strip()
+
+
+def _kick(data):
+    """Validate a `kick` frame; return (nick, reason)."""
+    nick = data.get("nick")
+    if not isinstance(nick, str) or not nick:
+        raise ProtocolError("bad_json", "nick must be a non-empty string")
+    reason = data.get("reason", "")
+    if not isinstance(reason, str) or len(reason.strip()) > MAX_FIELD:
+        raise ProtocolError("bad_text", f"reason must be 0-{MAX_FIELD} chars")
+    return nick, reason.strip()
 
 
 def _say(data, max_text):

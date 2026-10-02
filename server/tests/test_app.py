@@ -1,7 +1,10 @@
 """End-to-end tests over Starlette's TestClient WebSocket support."""
 import json
 
+import pytest
+
 from starlette.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
 
 from paranoia.app import create_app
 from paranoia.config import Settings
@@ -171,3 +174,34 @@ def test_op_is_oldest_and_passes_on_leave():
                     assert d.receive_json()["type"] == "leave"
                     assert d.receive_json() == {"type": "op",
                                                 "nick": wb["nick"]}
+
+
+def test_kick_flow_over_sockets():
+    """Op kicks b: all get kick, b's socket closes, no leave follows."""
+    with client() as c:
+        with c.websocket_connect("/ws") as a, \
+             c.websocket_connect("/ws") as b, \
+             c.websocket_connect("/ws") as d:
+            na = a.receive_json()["nick"]
+            nb = b.receive_json()["nick"]
+            d.receive_json()
+            a.receive_json(); a.receive_json()  # joins of b, d
+            b.receive_json()                    # join of d
+            b.send_json({"type": "kick", "nick": na})
+            assert b.receive_json()["code"] == "not_op"
+            a.send_json({"type": "kick", "nick": na})
+            assert a.receive_json()["code"] == "bad_target"
+            a.send_json({"type": "kick", "nick": "ghost"})
+            assert a.receive_json()["code"] == "no_such_nick"
+            a.send_json({"type": "kick", "nick": nb, "reason": "bye"})
+            frame = {"type": "kick", "nick": nb, "by": na, "reason": "bye"}
+            assert a.receive_json() == frame
+            assert b.receive_json() == frame
+            assert d.receive_json() == frame
+            with pytest.raises(WebSocketDisconnect):
+                b.receive_json()
+            a.send_json({"type": "say", "text": "after"})
+            assert a.receive_json()["text"] == "after"  # no leave in between
+            assert d.receive_json()["text"] == "after"
+            with c.websocket_connect("/ws") as e:
+                assert nb not in e.receive_json()["users"]

@@ -53,3 +53,16 @@ def test_topic_frame():
                        500)[1] == ("x" * 200,)
     assert code(json.dumps({"type": "topic", "text": "x" * 201})) == "bad_text"
     assert code('{"type": "topic"}') == "bad_text"
+
+
+def test_kick_frame():
+    """kick needs a string nick; reason is stripped and capped."""
+    assert parse_frame('{"type": "kick", "nick": "abra"}', 500) == (
+        "kick", ("abra", ""))
+    raw = json.dumps({"type": "kick", "nick": "abra", "reason": " bye "})
+    assert parse_frame(raw, 500)[1] == ("abra", "bye")
+    assert code('{"type": "kick"}') == "bad_json"
+    assert code('{"type": "kick", "nick": ""}') == "bad_json"
+    raw = json.dumps({"type": "kick", "nick": "a", "reason": "x" * 201})
+    assert code(raw) == "bad_text"
+    assert code('{"type": "kick", "nick": "a", "reason": 5}') == "bad_text"

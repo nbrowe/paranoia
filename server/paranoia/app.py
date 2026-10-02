@@ -40,7 +40,7 @@ def create_app(settings=None, store=None):
         try:
             await _serve(ws, chat, nick, settings.max_text)
         finally:
-            await chat.leave(nick)
+            await chat.leave(nick, ws)
 
     return app
 
@@ -53,13 +53,14 @@ async def _serve(ws, chat, nick, max_text):
             return
         try:
             kind, args = parse_frame(event.get("text"), max_text)
+            if kind == "say":
+                await chat.say(nick, *args)
+            elif kind == "topic":
+                await chat.set_topic(nick, *args)
+            elif kind == "kick":
+                await chat.kick(nick, *args)
         except ProtocolError as e:
             await ws.send_json(error_frame(e.code, e.message))
-            continue
-        if kind == "say":
-            await chat.say(nick, *args)
-        elif kind == "topic":
-            await chat.set_topic(nick, *args)
 
 
 app = create_app()
