@@ -56,6 +56,8 @@ class App:
         self.entry = ttk.Entry(self.root)
         self.entry.pack(fill="x")
         self.entry.bind("<Return>", self._on_enter)
+        self.entry.bind("<Tab>", self._on_tab)
+        self.completion = None
         self.entry.focus_set()
         self.status = ttk.Label(self.root, anchor="w", relief="sunken")
         self.status.pack(fill="x")
@@ -116,6 +118,18 @@ class App:
                 self.show("notice", line)
         else:
             self.show("error", "! " + arg)
+
+    def _on_tab(self, _event):
+        """TAB: complete or cycle a nick; never move keyboard focus."""
+        line = self.entry.get()
+        comp = logic.complete(line, self.state.users, self.state.nick,
+                              self.completion)
+        if comp:
+            self.completion = comp
+            self.entry.delete(0, "end")
+            self.entry.insert(0, comp.line)
+            self.entry.icursor("end")
+        return "break"
 
     def _do_topic(self, text):
         """/topic: show the current topic, or send a new one."""

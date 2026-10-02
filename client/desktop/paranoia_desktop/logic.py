@@ -8,6 +8,7 @@ list but cannot be shown as selected in the list widget.
 """
 
 import time
+from collections import namedtuple
 from dataclasses import dataclass, field
 
 
@@ -78,6 +79,32 @@ def build_topic(text):
 def build_kick(nick, reason=""):
     """Build a `kick` frame."""
     return {"type": "kick", "nick": nick, "reason": reason}
+
+
+Completion = namedtuple("Completion", "head cands idx")
+Completion.line = property(lambda c: c.head + c.cands[c.idx])
+
+
+def complete(line, users, own, prev=None):
+    """TAB-complete the last word of `line` against room users.
+
+    Applies to every /omit argument and the first /kick argument. Matching
+    is a case-insensitive prefix; `own` is never offered. If `line` is the
+    result of `prev` (a Completion), cycle to its next candidate instead.
+    Returns a Completion (use `.line`) or None when nothing applies."""
+    if prev and line == prev.line:
+        nxt = (prev.idx + 1) % len(prev.cands)
+        return Completion(prev.head, prev.cands, nxt)
+    cut = line.rfind(" ") + 1
+    head, word = line[:cut], line[cut:]
+    words = head.split()
+    if not words or words[0] not in ("/omit", "/kick"):
+        return None
+    if words[0] == "/kick" and len(words) > 1:
+        return None
+    cands = sorted(u for u in users
+                   if u != own and u.lower().startswith(word.lower()))
+    return Completion(head, cands, 0) if cands else None
 
 
 def normalize_omit(names, own_nick):

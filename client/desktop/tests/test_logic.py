@@ -141,3 +141,28 @@ def test_kick_other_and_self():
     out = logic.apply_frame(st, {"type": "kick", "nick": "me", "by": "x",
                                  "reason": ""})
     assert st.kicked and out == [("error", "! you were kicked by x")]
+
+
+USERS = ["abe", "Abby", "bob", "me"]
+
+
+def test_complete_prefix_and_cycle():
+    """Case-insensitive prefix, own nick excluded, repeated TAB cycles."""
+    c = logic.complete("/omit a", USERS, "me")
+    assert c.line == "/omit Abby"  # sorted: "Abby" < "abe"
+    c = logic.complete(c.line, USERS, "me", c)
+    assert c.line == "/omit abe"
+    c = logic.complete(c.line, USERS, "me", c)
+    assert c.line == "/omit Abby"
+    assert logic.complete("/omit m", USERS, "me") is None
+
+
+def test_complete_scope():
+    """Empty word lists all; /kick only completes its first argument."""
+    assert logic.complete("/omit abe ", USERS, "me").cands == [
+        "Abby", "abe", "bob"]
+    assert logic.complete("/omit abe b", USERS, "me").line == "/omit abe bob"
+    assert logic.complete("/kick b", USERS, "me").line == "/kick bob"
+    assert logic.complete("/kick bob b", USERS, "me") is None
+    assert logic.complete("/me b", USERS, "me") is None
+    assert logic.complete("hello b", USERS, "me") is None
