@@ -23,7 +23,8 @@ python3 -m venv .venv
 .venv/bin/python -m paranoia_tui [--url ws://localhost:8000/ws] [--room lobby]
 ```
 
-Layout: message pane, user list (right, terminals 60+ columns wide), a
+Layout: message pane, user list (right, terminals 60+ columns wide; `*`
+marks you, `@` the room operator), a
 status line (own nick, active omit list, room topic) and the input line.
 
 ## Commands
