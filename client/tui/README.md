@@ -24,7 +24,7 @@ python3 -m venv .venv
 ```
 
 Layout: message pane, user list (right, terminals 60+ columns wide; `*`
-marks you, `@` the room operator), a
+after your nick, `@` before the room operator's), a
 status line (own nick, active omit list, room topic) and the input line.
 
 ## Commands

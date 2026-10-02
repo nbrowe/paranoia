@@ -158,10 +158,10 @@ def test_complete_scope_and_exclusions():
 
 
 def test_mark_user_and_update_op():
-    """`*` marks self, `@` the operator; op follows welcome/op frames."""
+    """`@` prefixes the operator, `*` marks self; op follows frames."""
     assert logic.mark_user("a", "a", "b") == "a*"
-    assert logic.mark_user("b", "a", "b") == "b@"
-    assert logic.mark_user("a", "a", "a") == "a*@"
+    assert logic.mark_user("b", "a", "b") == "@b"
+    assert logic.mark_user("a", "a", "a") == "@a*"
     assert logic.mark_user("c", "a", "b") == "c"
     assert logic.update_op("", {"type": "welcome", "op": "x"}) == "x"
     assert logic.update_op("x", {"type": "op", "nick": "y"}) == "y"
