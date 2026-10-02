@@ -1,8 +1,9 @@
 <!--
   Root component: owns the chat state, wires the WebSocket connection to
-  the reducer in lib/state.js, and lays out header, timeline, user list
-  and input. Scope: layout and wiring only. Limitations: single room per
-  page load (taken from ?room=).
+  the reducer in lib/state.js, and lays out header (logo mark, title,
+  room, status, theme), timeline, user list and input. Scope: layout and
+  wiring only. Limitations: single room per page load (taken from
+  ?room=).
 -->
 <script>
   import { untrack } from 'svelte'
@@ -54,6 +55,7 @@
 
 <div class="d-flex flex-column vh-100">
   <header class="d-flex align-items-center gap-2 p-2 border-bottom">
+    <img src="/logo.svg" alt="" width="26" height="26">
     <strong>Paranoia</strong>
     {#if s.room}<span class="text-muted text-truncate">#{s.room}</span>{/if}
     <span class="ms-auto text-nowrap">
