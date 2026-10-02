@@ -1,5 +1,5 @@
 <!--
-  Theme toggle button for the header. Shows the scheme it will switch to;
+  Theme toggle button for the header. Icon-only; shows the scheme it will switch to;
   clicking flips data-bs-theme on <html> and saves the explicit choice in
   localStorage when available (index.html applies the initial scheme
   before first paint). Limitations: one instance expected per page.
@@ -26,8 +26,18 @@
 </script>
 
 <button
-  type="button" class="btn btn-sm btn-outline-secondary text-nowrap"
+  type="button" class="btn btn-sm btn-outline-secondary theme-btn"
   aria-label="Switch to {target} theme" title="Switch to {target} theme"
   data-testid="theme" onclick={flip}>
-  <span aria-hidden="true">{icons[target]}</span> {target}
+  <span aria-hidden="true">{icons[target]}</span>
 </button>
+
+<style>
+  /* Icon only: near-square. */
+  .theme-btn {
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    line-height: 1;
+  }
+</style>
