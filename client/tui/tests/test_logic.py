@@ -19,6 +19,20 @@ def test_parse_omit_sets_clears_dedups():
     assert logic.parse_input("/omit") == ("omit", [])
 
 
+def test_parse_new_commands():
+    """/help, /me, /topic, /kick and the // escape parse as specified."""
+    assert logic.parse_input("/help").kind == "help"
+    assert logic.parse_input("/me waves  hi") == ("me", "waves  hi")
+    assert logic.parse_input("/me").kind == "usage"
+    assert logic.parse_input("/topic") == ("topic", None)
+    assert logic.parse_input("/topic new  title") == ("topic", "new  title")
+    assert logic.parse_input("/kick bob") == ("kick", ("bob", ""))
+    assert logic.parse_input("/kick bob be  nice") == (
+        "kick", ("bob", "be  nice"))
+    assert logic.parse_input("/kick").kind == "usage"
+    assert logic.parse_input("//shrug") == ("say", "/shrug")
+
+
 def test_build_say_includes_omit_only_when_set():
     """The omit key is absent for an empty list."""
     assert json.loads(logic.build_say("x", [])) == {"type": "say", "text": "x"}

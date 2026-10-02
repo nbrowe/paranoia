@@ -12,8 +12,29 @@ import time
 from typing import NamedTuple
 
 
+USAGE = {
+    "/me": "usage: /me <text>",
+    "/kick": "usage: /kick <nick> [reason]",
+}
+HELP = [
+    "/help                 this list",
+    "/omit [nick ...]      hide your messages from nicks; bare clears",
+    "/me <text>            send an action (* nick text)",
+    "/kick <nick> [why]    remove a user (room operator only)",
+    "/topic [text]         show the topic, or set it",
+    "/quit                 exit",
+    "//text                send a message starting with a literal /",
+    "Tab after /omit or /kick completes nicks in the room",
+]
+
+
 class Command(NamedTuple):
-    """Parsed user input: `kind` is quit/omit/say/unknown/empty."""
+    """Parsed user input.
+
+    `kind` is quit/help/omit/me/kick/topic/say/usage/unknown/empty. `arg`
+    is the payload: omit list, text, (nick, reason), topic text (None to
+    show it) or a usage string.
+    """
 
     kind: str
     arg: object = None
@@ -31,13 +52,27 @@ def parse_input(raw):
     text = raw.strip()
     if not text:
         return Command("empty")
+    if text.startswith("//"):
+        return Command("say", text[1:])
     if not text.startswith("/"):
         return Command("say", text)
-    cmd, *args = text.split()
+    cmd, _, rest = text.partition(" ")
+    rest = rest.strip()
     if cmd == "/quit":
         return Command("quit")
+    if cmd == "/help":
+        return Command("help")
     if cmd == "/omit":
-        return Command("omit", list(dict.fromkeys(args)))
+        return Command("omit", list(dict.fromkeys(rest.split())))
+    if cmd == "/me":
+        return Command("me", rest) if rest else Command("usage", USAGE[cmd])
+    if cmd == "/topic":
+        return Command("topic", rest or None)
+    if cmd == "/kick":
+        nick, _, reason = rest.partition(" ")
+        if not nick:
+            return Command("usage", USAGE[cmd])
+        return Command("kick", (nick, reason.strip()))
     return Command("unknown", cmd)
 
 
