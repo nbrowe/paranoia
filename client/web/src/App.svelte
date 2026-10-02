@@ -5,6 +5,7 @@
   page load (taken from ?room=).
 -->
 <script>
+  import { untrack } from 'svelte'
   import { connect } from './lib/connection.js'
   import { wsUrl, buildSay } from './lib/protocol.js'
   import {
@@ -19,11 +20,12 @@
   let conn
 
   $effect(() => {
-    conn = connect({
+    // connect() calls onStatus synchronously; keep that out of the effect
+    conn = untrack(() => connect({
       url: wsUrl(location, import.meta.env.VITE_WS_URL),
       onFrame: (frame) => { s = applyFrame(s, frame) },
       onStatus: (status) => { s = setStatus(s, status) },
-    })
+    }))
     return () => conn.close()
   })
 
