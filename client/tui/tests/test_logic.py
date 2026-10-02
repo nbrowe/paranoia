@@ -130,3 +130,26 @@ def test_topic_state():
                "topic": "t", "history": []}
     assert "topic: t" in logic.format_event(welcome, "me")[1].text
     assert "topic: t" in logic.status_text("me", [], "t")
+
+
+def test_complete_prefix_and_cycle():
+    """Tab completes case-insensitively, then cycles on repeats."""
+    users = ["Bob", "bill", "me", "zed"]
+    buf, st = logic.complete("/omit b", users, "me")
+    assert buf == "/omit Bob"
+    buf, st = logic.complete(buf, users, "me", st)
+    assert buf == "/omit bill"
+    buf, st = logic.complete(buf, users, "me", st)
+    assert buf == "/omit Bob"
+
+
+def test_complete_scope_and_exclusions():
+    """Empty word lists everyone else; used and own nicks are skipped."""
+    users = ["a", "b", "me"]
+    assert logic.complete("/omit ", users, "me")[0] == "/omit a"
+    assert logic.complete("/omit a ", users, "me")[0] == "/omit a b"
+    assert logic.complete("/omit q", users, "me") == ("/omit q", None)
+    assert logic.complete("/omit m", users, "me") == ("/omit m", None)
+    assert logic.complete("hello b", users, "me") == ("hello b", None)
+    assert logic.complete("/kick b", users, "me")[0] == "/kick b"
+    assert logic.complete("/kick a rude b", users, "me")[1] is None

@@ -76,6 +76,42 @@ def parse_input(raw):
     return Command("unknown", cmd)
 
 
+class Completion(NamedTuple):
+    """Tab-cycle state: buffer text before the word, candidates, index."""
+
+    head: str
+    matches: list
+    index: int
+
+
+def complete(buf, users, own_nick, state=None):
+    """Tab-complete the last word of an /omit or /kick line.
+
+    Returns (new_buf, state). Pass the previous state back on repeated Tab
+    to cycle through the candidates; pass None for a fresh completion.
+    Candidates are room users (minus ourselves, and minus nicks already
+    listed for /omit) matching the word as a case-insensitive prefix.
+    /kick only completes its first argument; the rest is a free reason.
+    """
+    if state:
+        idx = (state.index + 1) % len(state.matches)
+        return state.head + state.matches[idx], state._replace(index=idx)
+    cmd, sep, rest = buf.partition(" ")
+    if not sep or cmd not in ("/omit", "/kick"):
+        return buf, None
+    head, _, word = buf.rpartition(" ")
+    head += " "
+    done = rest.split()[:-1] if word else rest.split()
+    if cmd == "/kick" and done:
+        return buf, None
+    skip = {own_nick, *done}
+    found = [u for u in users
+             if u not in skip and u.lower().startswith(word.lower())]
+    if not found:
+        return buf, None
+    return head + found[0], Completion(head, found, 0)
+
+
 def build_say(text, omit, action=False):
     """Build the JSON text of a `say` frame.
 
