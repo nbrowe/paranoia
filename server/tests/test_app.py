@@ -114,3 +114,22 @@ class _Dead:
 
     async def send_json(self, frame):
         """Discard the frame."""
+
+
+def test_action_message_flag_and_masking():
+    """/me messages carry action=true to all, with normal masking."""
+    with client() as c:
+        with c.websocket_connect("/ws") as a, c.websocket_connect("/ws") as b:
+            a.receive_json()
+            nb = b.receive_json()["nick"]
+            a.receive_json()  # join of b
+            a.send_json({"type": "say", "text": "waves", "action": True,
+                         "omit": [nb]})
+            ma, mb = a.receive_json(), b.receive_json()
+            assert ma["action"] is True and ma["text"] == "waves"
+            assert mb["action"] is True and mb["text"] == "*****"
+            a.send_json({"type": "say", "text": "plain"})
+            assert "action" not in a.receive_json()
+            with c.websocket_connect("/ws") as d:
+                hist = d.receive_json()["history"]
+                assert hist[0]["action"] is True and "action" not in hist[1]

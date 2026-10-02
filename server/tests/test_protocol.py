@@ -16,7 +16,7 @@ def code(raw):
 def test_valid_say_strips_text_and_dedups_omit():
     """Text is stripped and omit becomes a set."""
     raw = json.dumps({"type": "say", "text": " hi ", "omit": ["a", "a"]})
-    assert parse_say(raw, 500) == ("hi", {"a"})
+    assert parse_say(raw, 500) == ("hi", {"a"}, False)
 
 
 def test_error_codes():
@@ -35,3 +35,10 @@ def test_max_length_boundary():
     """Exactly 500 characters after stripping is accepted."""
     raw = json.dumps({"type": "say", "text": " " + "x" * 500 + " "})
     assert len(parse_say(raw, 500)[0]) == 500
+
+
+def test_action_flag():
+    """action must be a boolean and defaults to False."""
+    raw = json.dumps({"type": "say", "text": "waves", "action": True})
+    assert parse_say(raw, 500) == ("waves", set(), True)
+    assert code('{"type": "say", "text": "x", "action": "yes"}') == "bad_json"

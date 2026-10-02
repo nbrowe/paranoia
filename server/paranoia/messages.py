@@ -20,6 +20,7 @@ class Message:
     sender: str
     text: str
     omitted: frozenset
+    action: bool = False
 
 
 def mask(text):
@@ -36,4 +37,6 @@ def render(msg, recipient):
         out.update(text=mask(msg.text), masked=True)
     else:
         out.update(text=msg.text, masked=False)
+    if msg.action:
+        out["action"] = True
     return out

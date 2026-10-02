@@ -39,9 +39,10 @@ class Room:
         del self.users[nick]
         await self._broadcast({"type": "leave", "nick": nick})
 
-    async def say(self, sender, text, omit):
+    async def say(self, sender, text, omit, action=False):
         """Store a message and send each user their rendered copy."""
-        msg = self._store.append(self.name, sender, text, omit - {sender})
+        msg = self._store.append(
+            self.name, sender, text, omit - {sender}, action)
         await self._send_each(
             {n: {"type": "message", **render(msg, n)} for n in self.users}
         )

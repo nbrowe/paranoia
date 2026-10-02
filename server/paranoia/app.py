@@ -52,11 +52,11 @@ async def _serve(ws, chat, nick, max_text):
         if event["type"] == "websocket.disconnect":
             return
         try:
-            text, omit = parse_say(event.get("text"), max_text)
+            text, omit, action = parse_say(event.get("text"), max_text)
         except ProtocolError as e:
             await ws.send_json(error_frame(e.code, e.message))
             continue
-        await chat.say(nick, text, omit)
+        await chat.say(nick, text, omit, action)
 
 
 app = create_app()

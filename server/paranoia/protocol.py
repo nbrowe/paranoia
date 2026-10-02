@@ -1,6 +1,6 @@
 """Client frame parsing and validation.
 
-Purpose: turn a raw client frame into a validated (text, omit) pair or a
+Purpose: turn a raw client frame into a validated (text, omit, action) triple or a
 ProtocolError carrying a protocol error code.
 Scope: the client -> server direction of docs/protocol.md.
 Limitations: only the `say` type exists; an `omit` that is not a list of
@@ -25,7 +25,7 @@ def error_frame(code, message):
 
 
 def parse_say(raw, max_text):
-    """Validate a raw frame as `say`; return (text, omit set) or raise."""
+    """Validate a raw frame as `say`; return (text, omit set, action) or raise."""
     try:
         data = json.loads(raw) if raw is not None else None
     except ValueError:
@@ -40,4 +40,7 @@ def parse_say(raw, max_text):
     omit = data.get("omit", [])
     if not isinstance(omit, list) or not all(isinstance(o, str) for o in omit):
         raise ProtocolError("bad_json", "omit must be a list of strings")
-    return text.strip(), set(omit)
+    action = data.get("action", False)
+    if not isinstance(action, bool):
+        raise ProtocolError("bad_json", "action must be a boolean")
+    return text.strip(), set(omit), action
