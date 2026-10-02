@@ -45,7 +45,7 @@ Host and port are uvicorn options.
 | `messages.py`     | `Message`, `mask()`, `render()` (pure, per-recipient) |
 | `protocol.py`     | client frame validation and error codes           |
 | `storage.py`      | `HistoryStore` interface + in-memory backend      |
-| `room.py`         | `Room` (users, broadcast) and `Hub` (room registry) |
+| `room.py`         | `Room` (users, topic, operator, kick, broadcast) and `Hub` (room registry) |
 | `app.py`          | FastAPI app factory and `/ws` transport           |
 
 - New storage backend (e.g. SQLite): subclass `HistoryStore` in
