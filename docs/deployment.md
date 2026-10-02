@@ -29,6 +29,11 @@ podman-compose up -d --build
 docker compose up -d --build
 ```
 
+The repo-root launcher wraps the same Compose commands. `./paranoia server`
+runs `up -d --build` (using `podman-compose`, or `docker compose` if that is
+all that is installed); any arguments replace the default, e.g.
+`./paranoia server down` or `./paranoia server logs -f`.
+
 Verified with podman-compose 1.6.0 (Podman 5.8.2). Podman builds the
 image in OCI format here, so the image itself carries no `HEALTHCHECK`
 (it warns and ignores it); the `healthcheck:` block in `compose.yaml` is
