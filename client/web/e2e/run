@@ -37,7 +37,7 @@ podman build -q --format docker -t "$SERVER_IMAGE" \
   -f "$ROOT/server/Containerfile" "$ROOT/server"
 
 echo "== building web client"
-podman run --rm -v "$WEB":/app:Z -w /app "$NODE_IMAGE" \
+podman run --rm -v "$WEB":/app:z -w /app "$NODE_IMAGE" \
   sh -c 'npm ci --no-audit --no-fund && npm run build'
 
 echo "== starting stack"
@@ -48,8 +48,8 @@ $COMPOSE up -d
 echo "== running tests"
 set +e
 podman run --rm --network host --ipc=host --security-opt label=disable \
-  -v "$HERE":/e2e:Z -v "$SOCK":/run/podman.sock \
-  -v "$ROOT/server/paranoia/data/pokemon.txt":/data/pokemon.txt:ro,Z \
+  -v "$HERE":/e2e:z -v "$SOCK":/run/podman.sock \
+  -v "$ROOT/server/paranoia/data/pokemon.txt":/data/pokemon.txt:ro,z \
   -e CI=1 -e E2E_PODMAN_SOCK=/run/podman.sock \
   -e E2E_POKEMON_FILE=/data/pokemon.txt -w /e2e "$PW_IMAGE" \
   sh -c 'npm ci --no-audit --no-fund && npx playwright test "$@"' sh "$@"

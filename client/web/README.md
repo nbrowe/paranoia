@@ -21,7 +21,7 @@ Raw equivalent (e.g. for GitLab CI with a `node:24-alpine` image, just run
 `npm ci && npm test`):
 
 ```sh
-podman run --rm -v "$PWD":/app:Z -w /app docker.io/library/node:24-alpine \
+podman run --rm -v "$PWD":/app:z -w /app docker.io/library/node:24-alpine \
   sh -c 'npm ci && npm test'
 ```
 

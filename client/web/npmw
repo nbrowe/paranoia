@@ -13,5 +13,5 @@ if [ "$1" = "--" ]; then shift; CMD="$*"; else CMD="npm $*"; fi
 TTY=""
 [ -t 0 ] && TTY="-it"
 # shellcheck disable=SC2086
-exec podman run --rm $TTY -v "$PWD":/app:Z -w /app -p 5173:5173 \
+exec podman run --rm $TTY -v "$PWD":/app:z -w /app -p 5173:5173 \
   -e VITE_PROXY_TARGET -e VITE_WS_URL $PODMAN_ARGS "$IMAGE" sh -c "$CMD"
