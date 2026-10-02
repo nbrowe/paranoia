@@ -21,7 +21,7 @@ async function phone(browser, room, width = 390) {
   })
   const page = await context.newPage()
   await page.goto(`/?room=${room}`)
-  await expect(page.getByTestId('status')).toHaveText('online')
+  await expect(page.getByTestId('status')).toHaveAttribute('title', 'online')
   return page
 }
 

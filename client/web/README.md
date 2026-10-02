@@ -73,7 +73,8 @@ origin, so no build-time URL is needed. Quick local check:
 | `src/lib/*.test.js`       | Vitest unit tests (core logic only)        |
 | `src/App.svelte`, `src/components/` | UI wiring and presentation       |
 
-The header has a theme toggle button (`data-bs-theme` on `<html>`). With
+The header shows connection status as a small dot (green online, amber
+connecting, red offline; the word is its tooltip and `aria-label`). It also has a theme toggle button (`data-bs-theme` on `<html>`). With
 no saved choice the scheme follows local time (dark 18:00-06:00, hours in
 `src/lib/theme.js`); clicking flips it and keeps that choice in
 `localStorage`. An inline script in `index.html` applies the same rule

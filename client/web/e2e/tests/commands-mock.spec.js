@@ -37,7 +37,7 @@ async function open(browser, { width = 1280, topic = '' } = {}) {
     }))
   })
   await page.goto('/?room=stub')
-  await expect(page.getByTestId('status')).toHaveText('online')
+  await expect(page.getByTestId('status')).toHaveAttribute('title', 'online')
   const push = (f) => socket.send(JSON.stringify(f))
   return { page, sent, conns, push }
 }
@@ -115,7 +115,8 @@ test('being kicked shows the reason and stops reconnecting',
     push({ type: 'kick', nick: 'pikachu', by: 'mew', reason: 'spamming' })
     await expect(page.getByTestId('notice')
       .filter({ hasText: 'You were kicked by mew: spamming' })).toHaveCount(1)
-    await expect(page.getByTestId('status')).toHaveText('offline')
+    await expect(page.getByTestId('status'))
+      .toHaveAttribute('title', 'offline')
     await expect(page.getByPlaceholder('Message')).toBeDisabled()
     await page.waitForTimeout(2000)  // longer than the first backoff
     expect(conns.n).toBe(1)

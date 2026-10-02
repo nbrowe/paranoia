@@ -75,7 +75,7 @@ export class User {
     const context = await browser.newContext()
     const user = new User(await context.newPage())
     await user.page.goto(`/?room=${room}`)
-    await expect(user.status).toHaveText('online')
+    await expect(user.status).toHaveAttribute('title', 'online')
     user.nick = (await user.page.getByTestId('nick').textContent()).trim()
     return user
   }

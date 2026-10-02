@@ -11,7 +11,11 @@ test('connects, shows nick, user list and greeting', async ({ browser }) => {
   const a = await User.join(browser, room)
 
   expect(isPokemon(a.nick)).toBe(true)
-  await expect(a.status).toHaveText('online')
+  await expect(a.status).toHaveAttribute('title', 'online')
+  await expect(a.status).toHaveAttribute('aria-label', 'online')
+  await expect(a.status).toHaveAttribute('role', 'img')
+  await expect(a.status).toHaveText('')
+  await expect(a.status).toHaveCSS('background-color', 'rgb(25, 135, 84)')
   await expect(a.userList).toContainText('Users (1)')
   await expect(a.userList).toContainText(`${a.nick} (you)`)
   await expect(a.userList.getByRole('button')).toHaveCount(0)

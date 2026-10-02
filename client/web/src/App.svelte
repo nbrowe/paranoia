@@ -1,7 +1,7 @@
 <!--
   Root component: owns the chat state, wires the WebSocket connection to
   the reducer in lib/state.js, and lays out header (logo mark, title,
-  room, status, theme, topic), timeline, user list and input. Input
+  room, status dot, theme, topic), timeline, user list and input. Input
   lines (text and slash commands) go through lib/commands.js. A kick of
   our own nick closes the socket for good. Scope: layout and wiring only. Limitations: single room per page load (taken from
   ?room=).
@@ -36,10 +36,10 @@
     return () => conn.close()
   })
 
-  const badge = {
-    open: 'text-bg-success',
-    connecting: 'text-bg-warning',
-    disconnected: 'text-bg-danger',
+  const dot = {
+    open: 'bg-success',
+    connecting: 'bg-warning',
+    disconnected: 'bg-danger',
   }
   const label = {
     open: 'online',
@@ -70,8 +70,10 @@
       <span class="text-truncate">
         <span class="d-none d-sm-inline">you are</span>
         <strong data-testid="nick">{s.nick ?? '—'}</strong></span>
-      <span class="badge {badge[s.status]}" data-testid="status">
-        {label[s.status]}</span>
+      <span
+        class="status-dot rounded-circle flex-shrink-0 {dot[s.status]}"
+        role="img" aria-label={label[s.status]} title={label[s.status]}
+        data-testid="status"></span>
       <ThemeToggle />
     </span>
     {#if s.topic}
@@ -104,6 +106,11 @@
   }
   .who {
     min-width: 0;
+  }
+  .status-dot {
+    display: inline-block;
+    width: 0.75rem;
+    height: 0.75rem;
   }
   /* Phones: the pane scrolls so the timeline keeps a usable minimum
      height beside the (height-bounded) user list. */

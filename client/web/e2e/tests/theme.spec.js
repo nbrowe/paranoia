@@ -28,7 +28,7 @@ async function openAt(browser, localTime, setup) {
   await page.clock.setFixedTime(new Date(`${localTime}Z`))
   if (setup) await setup(context)
   await page.goto(`/?room=${uniqueRoom()}`)
-  await expect(page.getByTestId('status')).toHaveText('online')
+  await expect(page.getByTestId('status')).toHaveAttribute('title', 'online')
   return page
 }
 
@@ -59,7 +59,7 @@ test('click flips, persists across reload and beats the clock',
     await expect(btn).toHaveAccessibleName('Switch to light theme')
 
     await page.reload()
-    await expect(page.getByTestId('status')).toHaveText('online')
+    await expect(page.getByTestId('status')).toHaveAttribute('title', 'online')
     await expect(html).toHaveAttribute('data-bs-theme', 'dark')
 
     await page.getByTestId('theme').click()
