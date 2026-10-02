@@ -1,14 +1,16 @@
 <!--
   Root component: owns the chat state, wires the WebSocket connection to
   the reducer in lib/state.js, and lays out header (logo mark, title,
-  room, status, theme), timeline, user list and input. Scope: layout and
-  wiring only. Limitations: single room per page load (taken from
+  room, status, theme, topic), timeline, user list and input. Input
+  lines (text and slash commands) go through lib/commands.js. A kick of
+  our own nick closes the socket for good. Scope: layout and wiring only. Limitations: single room per page load (taken from
   ?room=).
 -->
 <script>
   import { untrack } from 'svelte'
   import { connect } from './lib/connection.js'
-  import { wsUrl, buildSay } from './lib/protocol.js'
+  import { wsUrl } from './lib/protocol.js'
+  import { handleInput } from './lib/commands.js'
   import {
     initialState, applyFrame, setStatus, toggleOmit, clearOmit,
   } from './lib/state.js'
@@ -25,7 +27,10 @@
     // connect() calls onStatus synchronously; keep that out of the effect
     conn = untrack(() => connect({
       url: wsUrl(location, import.meta.env.VITE_WS_URL),
-      onFrame: (frame) => { s = applyFrame(s, frame) },
+      onFrame: (frame) => {
+        s = applyFrame(s, frame)
+        if (s.kicked) conn.close()  // stop the reconnect loop
+      },
       onStatus: (status) => { s = setStatus(s, status) },
     }))
     return () => conn.close()
@@ -43,13 +48,14 @@
   }
 
   /**
-   * Send the text with the current omit list.
+   * Run an input line: plain text or a slash command (lib/commands.js).
    * @param {string} text raw input
-   * @returns {boolean} true if the frame went out
+   * @returns {boolean} true if handled and every frame went out
    */
   function send(text) {
-    const frame = buildSay(text, s.omit)
-    return frame !== null && conn.send(frame)
+    const r = handleInput(s, text)
+    s = r.state
+    return r.frames.every((f) => conn.send(f))
   }
 </script>
 
@@ -68,6 +74,12 @@
         {label[s.status]}</span>
       <ThemeToggle />
     </span>
+    {#if s.topic}
+      <div
+        class="w-100 small text-truncate" data-testid="topic"
+        title={s.topic}>
+        <span class="text-muted">Topic:</span> {s.topic}</div>
+    {/if}
   </header>
 
   <div

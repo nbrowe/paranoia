@@ -1,7 +1,8 @@
 <!--
   Scrolling timeline of messages and notices. Auto-scrolls to the newest
   entry unless the user has scrolled up. Masked messages are muted italic;
-  own messages show who was omitted. Text keeps its spaces (pre-wrap).
+  own messages show who was omitted; /me actions show as `* nick text`.
+  Text keeps its spaces (pre-wrap).
   Limitations: renders the whole (capped) timeline; no virtualization.
 -->
 <script>
@@ -49,7 +50,7 @@
         <strong
           data-testid="sender"
           class={it.sender === nick ? 'text-primary' : ''}>
-          {it.sender}</strong>
+          {it.action ? '* ' : ''}{it.sender}</strong>
         <span class="text-break msg-text" data-testid="text">{it.text}</span>
         {#if it.omitted?.length}
           <span class="badge text-bg-secondary" data-testid="omitted">
