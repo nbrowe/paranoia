@@ -1,8 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
   <title>Paranoia</title>
-  <polygon fill="#e9772f" points="-6,29 -6,26 -4,20 1,18 0,14 1,10 4,6 10,5 14,8 15,11 16,14 14,15 15,16 14,16 15,17 13,18 10,18 10,21 16,24 19,29"/>
-  <polygon fill="#b9561a" points="1,10 4,6 10,5 14,8 11,11 6,11 0,14"/>
-  <polygon fill="#2f9cc4" points="11,29 12,24 18,22 16,18 16,14 17,10 22,7 26,8 28,12 30,14 28,16 28,17 27,18 25,20 24,22 30,24 33,29"/>
-  <polygon fill="#1d6e91" points="16,14 17,10 22,7 24,12 19,16 16,18"/>
+  <g fill="#2f9cc4">
+    <circle cx="27" cy="16" r="4.5"/>
+    <circle cx="5" cy="16" r="4.5"/>
+    <circle cx="21.5" cy="25.53" r="4.5"/>
+    <circle cx="10.5" cy="25.53" r="4.5"/>
+    <circle cx="10.5" cy="6.47" r="4.5"/>
+  </g>
+  <circle cx="21.5" cy="6.47" r="4.5" fill="#e9772f"/>
 </svg>
-
