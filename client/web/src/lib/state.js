@@ -1,10 +1,13 @@
 /*
  * Chat state reducer: applies server frames (docs/protocol.md) and UI
  * actions to an immutable state object. Pure JS, no Svelte or DOM.
- * Scope: welcome/join/leave/message/error frames, connection status, the
- * sticky omit list, user ordering (own nick first). A disconnect clears
- * identity, users and omit but keeps the timeline. Limitations: the timeline is capped at MAX_ITEMS
- * entries; unknown frame types are ignored (protocol forward compat).
+ * Scope: welcome/join/leave/message/topic/kick/op/error frames,
+ * connection status, the sticky omit list, the room topic and operator,
+ * user ordering (own nick first). A disconnect clears identity, users and
+ * omit but keeps the timeline. A kick naming our own nick marks the state
+ * `kicked` (the caller must then stop reconnecting). Limitations: the
+ * timeline is capped at MAX_ITEMS entries; unknown frame types are
+ * ignored (protocol forward compat).
  */
 
 export const MAX_ITEMS = 500
@@ -21,7 +24,10 @@ export function initialState() {
     users: [],
     items: [],             // timeline: messages and notices, oldest first
     omit: [],              // sticky omit list (subset of users)
-    seq: 0,                // counter for notice keys
+    topic: '',             // room topic, '' if unset
+    op: null,              // current room operator's nick
+    kicked: false,         // true once we were kicked: do not reconnect
+    seq: 0,               // counter for notice keys
   }
 }
 
@@ -53,8 +59,22 @@ function notice(level, text) {
  * @returns {object} message item
  */
 function messageItem(m) {
-  const { id, ts, sender, text, masked, omitted } = m
-  return { kind: 'message', id, ts, sender, text, masked, omitted }
+  const { id, ts, sender, text, masked, omitted, action } = m
+  return {
+    kind: 'message', id, ts, sender, text, masked, omitted,
+    action: action === true,
+  }
+}
+
+/**
+ * Append local (client-generated) notices, one per line.
+ * @param {object} state current state
+ * @param {string} level info or error
+ * @param {string[]} lines notice texts
+ * @returns {object} new state
+ */
+export function addNotices(state, level, lines) {
+  return lines.reduce((s, l) => addItem(s, notice(level, l)), state)
 }
 
 /**
@@ -88,6 +108,8 @@ const frameHandlers = {
       room: f.room,
       users: sortUsers(f.users, f.nick),
       omit: pruneOmit(state.omit, f.users),
+      topic: f.topic ?? '',
+      op: f.op ?? null,
       items: [],
       seq: 0,
     }
@@ -116,6 +138,38 @@ const frameHandlers = {
     return addItem(state, messageItem(f))
   },
 
+  /** Store the new topic and announce who set it. */
+  topic(state, f) {
+    const text = f.text ?? ''
+    const what = text ? `set the topic to: ${text}` : 'cleared the topic'
+    return addItem({ ...state, topic: text },
+      notice('info', `${f.nick} ${what}`))
+  },
+
+  /**
+   * Announce a kick. The target leaves the user list; if that is us we go
+   * offline for good (kicked) and show the reason.
+   */
+  kick(state, f) {
+    const why = f.reason ? `: ${f.reason}` : ''
+    if (f.nick === state.nick) {
+      const gone = {
+        ...state, status: 'disconnected', kicked: true, users: [], omit: [],
+      }
+      return addItem(gone,
+        notice('error', `You were kicked by ${f.by}${why}`))
+    }
+    const users = state.users.filter((n) => n !== f.nick)
+    const next = { ...state, users, omit: pruneOmit(state.omit, users) }
+    return addItem(next,
+      notice('info', `${f.nick} was kicked by ${f.by}${why}`))
+  },
+
+  /** Track the new room operator. */
+  op(state, f) {
+    return { ...state, op: f.nick }
+  },
+
   /** Show a server error as a notice. */
   error(state, f) {
     return addItem(state, notice('error', `${f.code}: ${f.message}`))
@@ -142,10 +196,11 @@ export function applyFrame(state, frame) {
  * @returns {object} new state
  */
 export function setStatus(state, status) {
-  if (status === state.status) return state
+  if (status === state.status || state.kicked) return state
   const next = { ...state, status }
   if (status === 'disconnected') {
-    Object.assign(next, { nick: null, users: [], omit: [] })
+    Object.assign(next,
+      { nick: null, users: [], omit: [], topic: '', op: null })
   }
   if (status === 'disconnected' && state.status === 'open') {
     return addItem(next, notice('error', 'Disconnected. Reconnecting...'))
@@ -165,6 +220,18 @@ export function toggleOmit(state, nick) {
     ? state.omit.filter((n) => n !== nick)
     : [...state.omit, nick].sort()
   return { ...state, omit }
+}
+
+/**
+ * Replace the sticky omit list (own nick, absent users, duplicates dropped).
+ * @param {object} state current state
+ * @param {string[]} nicks wanted omit list
+ * @returns {object} new state
+ */
+export function setOmit(state, nicks) {
+  const wanted = new Set(nicks)
+  const omit = state.users.filter((n) => n !== state.nick && wanted.has(n))
+  return { ...state, omit: omit.sort() }
 }
 
 /**

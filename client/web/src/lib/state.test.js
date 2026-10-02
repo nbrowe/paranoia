@@ -1,11 +1,13 @@
 /*
  * Unit tests for the chat state reducer (state.js).
- * Scope: frame handling, omit list rules, status changes, timeline cap.
+ * Scope: frame handling (incl. topic, kick, op, action messages), omit
+ * list rules, status changes, timeline cap.
  * Limitations: no component or DOM tests.
  */
 import { describe, it, expect } from 'vitest'
 import {
-  initialState, applyFrame, setStatus, sortUsers, toggleOmit, clearOmit, MAX_ITEMS,
+  initialState, applyFrame, setStatus, sortUsers, toggleOmit, clearOmit,
+  setOmit, addNotices, MAX_ITEMS,
 } from './state.js'
 
 const msg = (id, extra = {}) => ({
@@ -179,5 +181,99 @@ describe('disconnect', () => {
       history: [],
     })
     expect(s.nick).toBe('abra')
+  })
+})
+
+describe('topic', () => {
+  it('welcome carries topic and op, defaults when absent', () => {
+    const s = welcomed({ topic: 'be careful', op: 'gengar' })
+    expect([s.topic, s.op]).toEqual(['be careful', 'gengar'])
+    const old = welcomed()
+    expect([old.topic, old.op]).toEqual(['', null])
+  })
+
+  it('topic frame updates the header topic and adds a notice', () => {
+    let s = applyFrame(welcomed(), {
+      type: 'topic', nick: 'gengar', text: 'cake',
+    })
+    expect(s.topic).toBe('cake')
+    expect(s.items.at(-1).text).toBe('gengar set the topic to: cake')
+    s = applyFrame(s, { type: 'topic', nick: 'mew', text: '' })
+    expect(s.topic).toBe('')
+    expect(s.items.at(-1).text).toBe('mew cleared the topic')
+  })
+
+  it('a disconnect clears the topic and op', () => {
+    const s = setStatus(welcomed({ topic: 't', op: 'mew' }), 'disconnected')
+    expect([s.topic, s.op]).toEqual(['', null])
+  })
+})
+
+describe('kick', () => {
+  it('removes another user, prunes omit, adds a notice', () => {
+    let s = toggleOmit(welcomed(), 'gengar')
+    s = applyFrame(s, {
+      type: 'kick', nick: 'gengar', by: 'mew', reason: 'spam',
+    })
+    expect(s.users).not.toContain('gengar')
+    expect(s.omit).toEqual([])
+    expect(s.kicked).toBe(false)
+    expect(s.items.at(-1).text).toBe('gengar was kicked by mew: spam')
+  })
+
+  it('omits the colon when the reason is empty', () => {
+    const s = applyFrame(welcomed(), {
+      type: 'kick', nick: 'gengar', by: 'mew', reason: '',
+    })
+    expect(s.items.at(-1).text).toBe('gengar was kicked by mew')
+  })
+
+  it('kicking us shows the reason and goes offline for good', () => {
+    let s = applyFrame(welcomed(), {
+      type: 'kick', nick: 'pikachu', by: 'mew', reason: 'bye',
+    })
+    expect(s.kicked).toBe(true)
+    expect(s.status).toBe('disconnected')
+    const last = s.items.at(-1)
+    expect(last.level).toBe('error')
+    expect(last.text).toBe('You were kicked by mew: bye')
+    const n = s.items.length
+    s = setStatus(s, 'disconnected')  // the socket close that follows
+    s = setStatus(s, 'connecting')
+    expect(s.items).toHaveLength(n)
+    expect(s.status).toBe('disconnected')
+  })
+})
+
+describe('op', () => {
+  it('tracks the new operator without a notice', () => {
+    const s0 = welcomed({ op: 'gengar' })
+    const s = applyFrame(s0, { type: 'op', nick: 'mew' })
+    expect(s.op).toBe('mew')
+    expect(s.items).toHaveLength(s0.items.length)
+  })
+})
+
+describe('action messages', () => {
+  it('keeps the action flag, false when absent', () => {
+    let s = welcomed()
+    s = applyFrame(s, { type: 'message', ...msg(1, { action: true }) })
+    s = applyFrame(s, { type: 'message', ...msg(2) })
+    expect(s.items.at(-2).action).toBe(true)
+    expect(s.items.at(-1).action).toBe(false)
+  })
+})
+
+describe('setOmit and addNotices', () => {
+  it('setOmit keeps present, non-self nicks, sorted and unique', () => {
+    const s = setOmit(welcomed(), ['mew', 'pikachu', 'nobody', 'gengar', 'mew'])
+    expect(s.omit).toEqual(['gengar', 'mew'])
+  })
+
+  it('addNotices appends one notice per line with unique keys', () => {
+    const s = addNotices(welcomed(), 'error', ['a', 'b'])
+    const [a, b] = s.items.slice(-2)
+    expect([a.text, b.text, a.level]).toEqual(['a', 'b', 'error'])
+    expect(a.key).not.toBe(b.key)
   })
 })
