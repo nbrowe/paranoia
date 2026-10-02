@@ -79,6 +79,15 @@ test('/me, /topic and /kick send the right frames', async ({ browser }) => {
   await page.context().close()
 })
 
+test('/topic - sends an empty topic frame', async ({ browser }) => {
+  const { page, sent } = await open(browser, { topic: 'cake' })
+  await page.getByPlaceholder('Message').fill('/topic -')
+  await page.getByPlaceholder('Message').press('Enter')
+  await expect.poll(() => sent.length).toBe(1)
+  expect(sent).toEqual([{ type: 'topic', text: '' }])
+  await page.context().close()
+})
+
 test('/topic alone shows the topic locally', async ({ browser }) => {
   const { page, sent } = await open(browser, { topic: 'cake' })
   await page.getByPlaceholder('Message').fill('/topic')
