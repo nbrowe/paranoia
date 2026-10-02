@@ -72,7 +72,7 @@ class App:
     def _refresh_status(self):
         """Redraw the status bar."""
         self.status.configure(text=logic.format_status(self.state))
-        self.topic.configure(text="Topic: " + self.state.topic)
+        self.topic.configure(text=logic.format_topic_label(self.state.topic))
 
     def _refresh_users(self):
         """Redraw the user list and restore selection from the omit list."""

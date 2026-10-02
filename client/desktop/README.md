@@ -37,8 +37,8 @@ python3 -m venv .venv
   - `/omit alice bob` sets the omit list (selection follows), `/omit` clears it.
   - `/me <text>` sends an action, shown as `* nick text`.
   - `/kick <nick> [reason]` removes a user (room operator only).
-  - `/topic` shows the topic; `/topic <text>` sets it. The topic is also
-    shown above the log.
+  - `/topic` shows the topic; `/topic <text>` sets it; `/topic -` clears
+    it. The topic is also shown above the log.
   - `//text` sends a literal `/text`. Unknown commands are reported
     locally, not sent.
 - TAB completes the last word of `/omit` arguments and the nick in `/kick`

@@ -24,6 +24,7 @@ def test_parse_commands():
     assert logic.parse_input("/kick")[0] == "error"
     assert logic.parse_input("/topic") == ("topic", None)
     assert logic.parse_input("/topic a b") == ("topic", "a b")
+    assert logic.parse_input("/topic -") == ("topic", "")
     assert logic.parse_input("//omit x") == ("say", "/omit x")
 
 
@@ -106,6 +107,8 @@ def test_format_topic():
     """Set and unset topics."""
     assert logic.format_topic("hi") == "* topic: hi"
     assert logic.format_topic("") == "* no topic set"
+    assert logic.format_topic_label("hi") == "Topic: hi"
+    assert logic.format_topic_label("") == "Topic: (none)"
 
 
 def test_action_message():
