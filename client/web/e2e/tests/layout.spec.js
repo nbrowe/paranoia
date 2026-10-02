@@ -1,6 +1,6 @@
 /*
  * E2E: the page fits a phone-width viewport.
- * Scope: no horizontal page overflow at 390px, the collapsed "Users (N)"
+ * Scope: no horizontal page overflow at 390px and 320px (header incl.), the collapsed "Users (N)"
  * toggle that expands the list inline, and a long user list scrolling in
  * its own bounded box (phone and desktop) while the timeline and input
  * stay reachable. Limitations: two widths only; no visual diffs.
@@ -9,14 +9,15 @@ import { test, expect } from '@playwright/test'
 import { User, uniqueRoom, addLurkers } from '../lib/user.js'
 
 /**
- * Open the app in a 390px wide context.
+ * Open the app in a phone-width context.
  * @param {import('@playwright/test').Browser} browser browser
  * @param {string} room room name
+ * @param {number} [width] viewport width in px
  * @returns {Promise<import('@playwright/test').Page>} loaded page
  */
-async function phone(browser, room) {
+async function phone(browser, room, width = 390) {
   const context = await browser.newContext({
-    viewport: { width: 390, height: 844 },
+    viewport: { width, height: 844 },
   })
   const page = await context.newPage()
   await page.goto(`/?room=${room}`)
@@ -78,8 +79,8 @@ test('desktop: long list scrolls inside the side column',
   async ({ browser }) => {
     const room = uniqueRoom()
     const a = await User.join(browser, room)
-    await addLurkers(a.page, room, 60)
-    await expect(a.userList).toContainText('Users (61)')
+    await addLurkers(a.page, room, 120)
+    await expect(a.userList).toContainText('Users (121)')
 
     const body = a.page.locator('#user-list-body')
     const scrolls = await body.evaluate((el) =>
@@ -96,3 +97,32 @@ test('desktop: long list scrolls inside the side column',
     await last.scrollIntoViewIfNeeded()
     await expect(last).toBeInViewport()
   })
+
+for (const width of [320, 390]) {
+  test(`header fits at ${width}px, long nick`, async ({ browser }) => {
+    const page = await phone(browser, uniqueRoom(), width)
+    // Force the worst case: a long nick and a long room name.
+    await page.evaluate(() => {
+      document.querySelector('[data-testid="nick"]').textContent =
+        'landorus-incarnate'
+    })
+    const m = await page.evaluate(() => {
+      const el = document.documentElement
+      const h = document.querySelector('header')
+      const r = (e) => e.getBoundingClientRect()
+      const logo = r(h.querySelector('img'))
+      return {
+        overflow: el.scrollWidth - el.clientWidth,
+        headerOverflow: h.scrollWidth - h.clientWidth,
+        logoRight: logo.right,
+        logoVisible: logo.width > 0,
+        themeRight: r(h.querySelector("[data-testid=theme]")).right,
+      }
+    })
+    expect(m.overflow).toBe(0)
+    expect(m.headerOverflow).toBe(0)
+    expect(m.logoVisible).toBe(true)
+    expect(m.themeRight).toBeLessThanOrEqual(width)
+    await page.context().close()
+  })
+}

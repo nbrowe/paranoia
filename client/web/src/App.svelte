@@ -1,21 +1,23 @@
 <!--
   Root component: owns the chat state, wires the WebSocket connection to
   the reducer in lib/state.js, and lays out header (logo mark, title,
-  room, status, theme), timeline, user list and input. Scope: layout and
-  wiring only. Limitations: single room per page load (taken from
+  room, status, theme, topic), timeline, user list and input. Input
+  lines (text and slash commands) go through lib/commands.js. A kick of
+  our own nick closes the socket for good. Scope: layout and wiring only. Limitations: single room per page load (taken from
   ?room=).
 -->
 <script>
   import { untrack } from 'svelte'
   import { connect } from './lib/connection.js'
-  import { wsUrl, buildSay } from './lib/protocol.js'
+  import { wsUrl } from './lib/protocol.js'
+  import { handleInput } from './lib/commands.js'
   import {
     initialState, applyFrame, setStatus, toggleOmit, clearOmit,
   } from './lib/state.js'
   import MessageList from './components/MessageList.svelte'
   import UserList from './components/UserList.svelte'
   import MessageInput from './components/MessageInput.svelte'
-  import ThemeSelect from './components/ThemeSelect.svelte'
+  import ThemeToggle from './components/ThemeToggle.svelte'
 
   // Raw state: the reducer returns fresh objects, no deep proxying needed.
   let s = $state.raw(initialState())
@@ -25,7 +27,10 @@
     // connect() calls onStatus synchronously; keep that out of the effect
     conn = untrack(() => connect({
       url: wsUrl(location, import.meta.env.VITE_WS_URL),
-      onFrame: (frame) => { s = applyFrame(s, frame) },
+      onFrame: (frame) => {
+        s = applyFrame(s, frame)
+        if (s.kicked) conn.close()  // stop the reconnect loop
+      },
       onStatus: (status) => { s = setStatus(s, status) },
     }))
     return () => conn.close()
@@ -43,27 +48,38 @@
   }
 
   /**
-   * Send the text with the current omit list.
+   * Run an input line: plain text or a slash command (lib/commands.js).
    * @param {string} text raw input
-   * @returns {boolean} true if the frame went out
+   * @returns {boolean} true if handled and every frame went out
    */
   function send(text) {
-    const frame = buildSay(text, s.omit)
-    return frame !== null && conn.send(frame)
+    const r = handleInput(s, text)
+    s = r.state
+    return r.frames.every((f) => conn.send(f))
   }
 </script>
 
 <div class="d-flex flex-column vh-100">
-  <header class="d-flex align-items-center gap-2 p-2 border-bottom">
+  <header class="d-flex flex-wrap align-items-center gap-2 p-2 border-bottom">
     <img src="/logo.svg" alt="" width="26" height="26">
     <strong>Paranoia</strong>
-    {#if s.room}<span class="text-muted text-truncate">#{s.room}</span>{/if}
-    <span class="ms-auto text-nowrap">
-      you are <strong data-testid="nick">{s.nick ?? '—'}</strong>
+    {#if s.room}
+      <span class="text-muted text-truncate room">#{s.room}</span>
+    {/if}
+    <span class="ms-auto d-flex align-items-center gap-2 mw-100 who">
+      <span class="text-truncate">
+        <span class="d-none d-sm-inline">you are</span>
+        <strong data-testid="nick">{s.nick ?? '—'}</strong></span>
       <span class="badge {badge[s.status]}" data-testid="status">
         {label[s.status]}</span>
+      <ThemeToggle />
     </span>
-    <ThemeSelect />
+    {#if s.topic}
+      <div
+        class="w-100 small text-truncate" data-testid="topic"
+        title={s.topic}>
+        <span class="text-muted">Topic:</span> {s.topic}</div>
+    {/if}
   </header>
 
   <div
@@ -81,6 +97,14 @@
 </div>
 
 <style>
+  /* Phones: the header wraps to a second line; long names truncate. */
+  .room {
+    flex: 1 1 4rem;
+    min-width: 0;
+  }
+  .who {
+    min-width: 0;
+  }
   /* Phones: the pane scrolls so the timeline keeps a usable minimum
      height beside the (height-bounded) user list. */
   .panes {

@@ -2,11 +2,12 @@
   Sidebar listing users in the room. Each other user is a toggle button
   (aria-pressed) that adds/removes them from the sticky omit list; your
   own nick is a plain chip and cannot be omitted. Buttons sit in a
-  wrapping flex grid, capped in width and growing to fill each row; long
-  nicks truncate (full nick in the title). Responsive: below md the list
-  is collapsed behind a "Users (N)" toggle and expands inline with a
-  bounded height; from md up it is a side column. Either way the grid
-  scrolls vertically when the buttons overflow it.
+  three-column grid of equal cells (each at most a third of the list, so
+  rows line up and wrap); long nicks truncate (full nick in the title).
+  Responsive: below md the list is collapsed behind a "Users (N)" toggle
+  and expands inline with a bounded height; from md up it is a side
+  column. Either way the grid scrolls vertically when the buttons
+  overflow it.
   Limitations: stateless apart from the toggle; the omit list lives in
   the parent.
 -->
@@ -29,13 +30,13 @@
   </div>
   <div
     id="user-list-body"
-    class="grid {open ? 'd-flex' : 'd-none'} d-md-flex flex-wrap gap-1
+    class="grid {open ? 'd-grid' : 'd-none'} d-md-grid gap-1
       mt-2 mt-md-0">
     {#each users as u (u)}
       {#if u === nick}
         <span
           class="user border rounded bg-body-tertiary fw-bold small px-2
-            py-1" title={u}>{u} (you)</span>
+            py-1 text-center" title={u}>{u} (you)</span>
       {:else}
         <button
           type="button" title={u} aria-pressed={omit.includes(u)}
@@ -56,13 +57,12 @@
   }
   /* Phones: bounded box that scrolls; md+: fills the side column. */
   .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     max-height: 40vh;
     overflow-y: auto;
     align-content: flex-start;
   }
   .user {
-    flex: 1 1 auto;
-    max-width: 9.5rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
