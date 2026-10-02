@@ -42,6 +42,26 @@ EOF
   exit "${1:-0}"
 }
 
+# Verify the interpreter exists, is new enough and can build venvs with pip.
+check_python() {
+  command -v "$PY" >/dev/null 2>&1 ||
+    die "$PY not found; install Python 3.9 or newer (or set PARANOIA_PYTHON)"
+  "$PY" -c 'import sys; sys.exit(sys.version_info < (3, 9))' ||
+    die "$PY is older than 3.9; install a newer Python or set PARANOIA_PYTHON"
+  "$PY" -c 'import venv, ensurepip' 2>/dev/null ||
+    die "$PY lacks venv/ensurepip; install your distro's python venv package" \
+      "(e.g. python3-venv on Debian/Ubuntu)"
+}
+
+# Verify tkinter imports and a display is available (desktop client only).
+check_desktop() {
+  "$PY" -c 'import tkinter' 2>/dev/null ||
+    die "tkinter is missing; install your distro's tkinter package" \
+      "(e.g. tk, python3-tkinter or python3-tk)"
+  [ -n "${DISPLAY:-}" ] ||
+    die "DISPLAY is not set; run from a graphical session (or set DISPLAY)"
+}
+
 # Create client/<name>/.venv if missing and (re)install requirements.txt
 # whenever its checksum differs from the stamp stored in the venv.
 bootstrap() {
@@ -62,6 +82,8 @@ bootstrap() {
 run_client() {
   local name="$1" module="$2"
   shift 2
+  check_python
+  [ "$name" = desktop ] && check_desktop
   bootstrap "$name"
   cd "$ROOT/client/$name"
   # Own --url goes first so an explicit --url in "$@" overrides it.
