@@ -4,17 +4,24 @@ Implements [docs/protocol.md](../../docs/protocol.md). Needs a Python with
 `tkinter` (usually a separate system package, e.g. `tk` or
 `python3-tkinter`; check with `python3 -c 'import tkinter'`).
 
-## Setup
+## Run
+
+From the repo root (any directory works):
+
+```sh
+./paranoia desktop [--url ws://localhost:8000/ws] [--room lobby]
+```
+
+The launcher creates `client/desktop/.venv` and installs `requirements.txt` on
+first run (and again whenever it changes), then execs the client.
+`PARANOIA_URL` sets the default `--url`.
+
+## Manual setup
 
 ```sh
 cd client/desktop
 python3 -m venv .venv
 .venv/bin/pip install -r requirements-dev.txt   # runtime only: requirements.txt
-```
-
-## Run
-
-```sh
 .venv/bin/python -m paranoia_desktop [--url ws://localhost:8000/ws] [--room lobby]
 ```
 

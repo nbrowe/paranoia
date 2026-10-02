@@ -2,17 +2,24 @@
 
 Curses client for the Paranoia server ([protocol](../../docs/protocol.md)).
 
-## Setup
+## Run
+
+From the repo root (any directory works):
+
+```sh
+./paranoia tui [--url ws://localhost:8000/ws] [--room lobby]
+```
+
+The launcher creates `client/tui/.venv` and installs `requirements.txt` on
+first run (and again whenever it changes), then execs the client.
+`PARANOIA_URL` sets the default `--url`.
+
+## Manual setup
 
 ```sh
 cd client/tui
 python3 -m venv .venv
 .venv/bin/pip install -r requirements-dev.txt   # runtime only: requirements.txt
-```
-
-## Run
-
-```sh
 .venv/bin/python -m paranoia_tui [--url ws://localhost:8000/ws] [--room lobby]
 ```
 
