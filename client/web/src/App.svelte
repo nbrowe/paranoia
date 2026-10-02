@@ -5,6 +5,7 @@
   page load (taken from ?room=).
 -->
 <script>
+  import { untrack } from 'svelte'
   import { connect } from './lib/connection.js'
   import { wsUrl, buildSay } from './lib/protocol.js'
   import {
@@ -19,11 +20,12 @@
   let conn
 
   $effect(() => {
-    conn = connect({
+    // connect() calls onStatus synchronously; keep that out of the effect
+    conn = untrack(() => connect({
       url: wsUrl(location, import.meta.env.VITE_WS_URL),
       onFrame: (frame) => { s = applyFrame(s, frame) },
       onStatus: (status) => { s = setStatus(s, status) },
-    })
+    }))
     return () => conn.close()
   })
 
@@ -47,15 +49,16 @@
 <div class="d-flex flex-column vh-100">
   <header class="d-flex align-items-center gap-2 p-2 border-bottom">
     <strong>Paranoia</strong>
-    {#if s.room}<span class="text-muted">#{s.room}</span>{/if}
-    <span class="ms-auto">
+    {#if s.room}<span class="text-muted text-truncate">#{s.room}</span>{/if}
+    <span class="ms-auto text-nowrap">
       {#if s.nick}you are <strong data-testid="nick">{s.nick}</strong>{/if}
       <span class="badge {badge[s.status]}" data-testid="status">
         {s.status}</span>
     </span>
   </header>
 
-  <div class="d-flex flex-grow-1 overflow-hidden">
+  <div
+    class="d-flex flex-column flex-md-row flex-grow-1 overflow-hidden">
     <MessageList items={s.items} nick={s.nick} />
     <UserList
       users={s.users} nick={s.nick} omit={s.omit}
