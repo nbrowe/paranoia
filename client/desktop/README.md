@@ -33,7 +33,17 @@ python3 -m venv .venv
 - Omit users by selecting them in the user list (click, ctrl-click for
   several). The selection is the sticky omit list sent with every message;
   the status bar shows it. Omitted users see your text as `*`.
-- `/omit alice bob` sets the omit list (selection follows), `/omit` clears it.
+- Commands (`/help` lists them in the client):
+  - `/omit alice bob` sets the omit list (selection follows), `/omit` clears it.
+  - `/me <text>` sends an action, shown as `* nick text`.
+  - `/kick <nick> [reason]` removes a user (room operator only).
+  - `/topic` shows the topic; `/topic <text>` sets it. The topic is also
+    shown above the log.
+  - `//text` sends a literal `/text`. Unknown commands are reported
+    locally, not sent.
+- TAB completes the last word of `/omit` arguments and the nick in `/kick`
+  against users in the room (case-insensitive prefix; repeat TAB to cycle).
+- If you are kicked, the reason is shown and the client does not reconnect.
 - Masked messages (you were omitted) are grey italic; your own messages
   show `(omitted: ...)`. Join/leave notices are green, errors red.
 - On disconnect a red message appears; restart the client to reconnect.
