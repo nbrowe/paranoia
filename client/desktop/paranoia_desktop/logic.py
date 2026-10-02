@@ -110,7 +110,8 @@ def format_ts(ts):
 
 def format_message(msg):
     """Return (tag, line) for a Message dict; tag is own/masked/normal."""
-    head = f"[{format_ts(msg['ts'])}] {msg['sender']}: {msg['text']}"
+    who = f"* {msg['sender']} " if msg.get("action") else f"{msg['sender']}: "
+    head = f"[{format_ts(msg['ts'])}] {who}{msg['text']}"
     if msg.get("masked"):
         return "masked", head
     if "omitted" in msg:
@@ -127,6 +128,7 @@ def apply_frame(state, frame):
     if kind == "welcome":
         state.nick, state.room = frame["nick"], frame["room"]
         state.users = sorted(frame["users"])
+        state.topic, state.op = frame.get("topic", ""), frame.get("op", "")
         lines = [format_message(m) for m in frame["history"]]
         lines.append(("notice", f"* joined #{state.room} as {state.nick}"))
         return lines
@@ -141,7 +143,32 @@ def apply_frame(state, frame):
         return [format_message(frame)]
     if kind == "error":
         return [("error", f"! {frame['code']}: {frame['message']}")]
+    if kind == "topic":
+        state.topic = frame["text"]
+        return [("notice", _topic_line(frame))]
+    if kind == "kick":
+        return _apply_kick(state, frame)
+    if kind == "op":
+        state.op = frame["nick"]
+        return [("notice", f"* {frame['nick']} is now the operator")]
     return []
+
+
+def _topic_line(frame):
+    """System line for a `topic` frame."""
+    if frame["text"]:
+        return f"* {frame['nick']} set the topic: {frame['text']}"
+    return f"* {frame['nick']} cleared the topic"
+
+
+def _apply_kick(state, frame):
+    """Handle a `kick` frame; our own nick means we were removed."""
+    why = f": {frame['reason']}" if frame.get("reason") else ""
+    if frame["nick"] == state.nick:
+        state.kicked = True
+        return [("error", f"! you were kicked by {frame['by']}{why}")]
+    state.users = [u for u in state.users if u != frame["nick"]]
+    return [("notice", f"* {frame['nick']} was kicked by {frame['by']}{why}")]
 
 
 def format_status(state):

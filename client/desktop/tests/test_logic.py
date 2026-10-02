@@ -106,3 +106,38 @@ def test_format_topic():
     """Set and unset topics."""
     assert logic.format_topic("hi") == "* topic: hi"
     assert logic.format_topic("") == "* no topic set"
+
+
+def test_action_message():
+    """/me messages render as '* nick text', masked too."""
+    line = logic.format_message(_msg(action=True))[1]
+    assert line.endswith("* pikachu hello")
+    tag, line = logic.format_message(_msg(action=True, text="**", masked=True))
+    assert tag == "masked" and line.endswith("* pikachu **")
+
+
+def test_welcome_topic_and_topic_frame():
+    """Welcome seeds topic/op; topic and op frames update them."""
+    st = ChatState()
+    logic.apply_frame(st, {"type": "welcome", "nick": "me", "room": "r",
+                           "users": ["me"], "history": [], "topic": "hi",
+                           "op": "me"})
+    assert (st.topic, st.op) == ("hi", "me")
+    out = logic.apply_frame(st, {"type": "topic", "nick": "a", "text": "yo"})
+    assert st.topic == "yo" and "a set the topic: yo" in out[0][1]
+    out = logic.apply_frame(st, {"type": "topic", "nick": "a", "text": ""})
+    assert st.topic == "" and "cleared" in out[0][1]
+    logic.apply_frame(st, {"type": "op", "nick": "a"})
+    assert st.op == "a"
+
+
+def test_kick_other_and_self():
+    """Kicking someone drops them; kicking us flags the session."""
+    st = ChatState(nick="me", users=["bob", "me"])
+    out = logic.apply_frame(st, {"type": "kick", "nick": "bob", "by": "me",
+                                 "reason": "spam"})
+    assert st.users == ["me"] and not st.kicked
+    assert out == [("notice", "* bob was kicked by me: spam")]
+    out = logic.apply_frame(st, {"type": "kick", "nick": "me", "by": "x",
+                                 "reason": ""})
+    assert st.kicked and out == [("error", "! you were kicked by x")]

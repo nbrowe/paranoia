@@ -31,6 +31,8 @@ class App:
 
     def _build_widgets(self):
         """Create and lay out all widgets."""
+        self.topic = ttk.Label(self.root, anchor="w", relief="groove")
+        self.topic.pack(fill="x")
         top = ttk.Frame(self.root)
         top.pack(fill="both", expand=True)
         self.log = tk.Text(top, state="disabled", wrap="word", width=70,
@@ -68,6 +70,7 @@ class App:
     def _refresh_status(self):
         """Redraw the status bar."""
         self.status.configure(text=logic.format_status(self.state))
+        self.topic.configure(text="Topic: " + self.state.topic)
 
     def _refresh_users(self):
         """Redraw the user list and restore selection from the omit list."""
@@ -140,7 +143,8 @@ class App:
                 self._refresh_users()
             else:
                 self.connected = False
-                self.show("error", f"! {payload} (restart to reconnect)")
+                if not self.state.kicked:  # a kick is final, say no more
+                    self.show("error", f"! {payload} (restart to reconnect)")
         self._refresh_status()
         self.root.after(POLL_MS, self._poll)
 
