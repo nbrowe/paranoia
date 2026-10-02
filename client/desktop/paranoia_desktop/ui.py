@@ -3,7 +3,7 @@
 Purpose: render chat state and turn user actions into protocol frames.
 Scope: widgets and event wiring only; all decisions live in logic.py and
 all socket work in net.py (Tk widgets are touched only on the Tk thread).
-Limitations: no reconnect, no scrollback limit, minimal styling.
+Limitations: no reconnect, log keeps the newest 2000 lines, minimal styling.
 """
 
 import tkinter as tk
@@ -13,6 +13,7 @@ from . import logic
 from .logic import ChatState
 
 POLL_MS = 100
+MAX_LINES = 2000  # log lines kept; older ones are trimmed
 
 
 class App:
@@ -66,6 +67,9 @@ class App:
         """Append one line to the read-only log and scroll to the end."""
         self.log.configure(state="normal")
         self.log.insert("end", line + "\n", tag)
+        extra = int(self.log.index("end-1c").split(".")[0]) - 1 - MAX_LINES
+        if extra > 0:
+            self.log.delete("1.0", f"{extra + 1}.0")
         self.log.configure(state="disabled")
         self.log.see("end")
 
@@ -150,15 +154,18 @@ class App:
 
     def _poll(self):
         """Drain network events on the Tk thread, then reschedule."""
+        users_changed = False
         for kind, payload in self.conn.poll():
             if kind == "frame":
                 for tag, line in logic.apply_frame(self.state, payload):
                     self.show(tag, line)
-                self._refresh_users()
+                users_changed |= logic.changes_user_list(payload)
             else:
                 self.connected = False
                 if not self.state.kicked:  # a kick is final, say no more
                     self.show("error", f"! {payload} (restart to reconnect)")
+        if users_changed:
+            self._refresh_users()
         self._refresh_status()
         self.root.after(POLL_MS, self._poll)
 

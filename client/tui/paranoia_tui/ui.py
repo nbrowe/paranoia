@@ -43,9 +43,11 @@ class App:
         self.op = ""
         self.tab = None  # logic.Completion while cycling with Tab
         self.closed = False
+        self.dirty = True  # screen needs a redraw
 
     def add(self, line):
         """Append a Line to the scrollback, trimming old entries."""
+        self.dirty = True
         self.lines.append(line)
         del self.lines[:-MAX_LINES]
 
@@ -159,21 +161,27 @@ class App:
         """Process every queued frame without blocking."""
         while True:
             try:
-                self.on_frame(self.frames.get_nowait())
+                frame = self.frames.get_nowait()
             except queue.Empty:
                 return
+            self.dirty = True
+            self.on_frame(frame)
 
     def run(self):
-        """Main loop: poll keys every 100 ms, drain frames, redraw."""
+        """Main loop: poll keys every 100 ms, drain frames, redraw if needed."""
         self.scr.timeout(100)
         self.scr.keypad(True)
         while True:
             self.drain()
-            self.draw()
+            if self.dirty:
+                self.dirty = False
+                self.draw()
             try:
                 key = self.scr.get_wch()
             except curses.error:
                 key = None  # timeout; also fires after a disconnect
+            if key is not None:
+                self.dirty = True  # includes KEY_RESIZE
             if self.closed and key is not None:
                 return
             if key is not None and self.on_key(key):
