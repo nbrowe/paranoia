@@ -19,6 +19,7 @@ class Room:
         """Create an empty room backed by the given HistoryStore."""
         self.name = name
         self.users = {}
+        self.topic = ""
         self._store = store
 
     async def join(self, conn):
@@ -39,6 +40,11 @@ class Room:
         del self.users[nick]
         await self._broadcast({"type": "leave", "nick": nick})
 
+    async def set_topic(self, nick, text):
+        """Set the room topic and tell everyone, including the setter."""
+        self.topic = text
+        await self._broadcast({"type": "topic", "nick": nick, "text": text})
+
     async def say(self, sender, text, omit, action=False):
         """Store a message and send each user their rendered copy."""
         msg = self._store.append(
@@ -51,7 +57,8 @@ class Room:
         """Build the welcome frame with history rendered for nick."""
         history = [render(m, nick) for m in self._store.recent(self.name)]
         return {"type": "welcome", "nick": nick, "room": self.name,
-                "users": sorted(self.users), "history": history}
+                "users": sorted(self.users), "topic": self.topic,
+                "history": history}
 
     async def _broadcast(self, frame, skip=None):
         """Send the same frame to every user except skip."""

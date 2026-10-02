@@ -71,3 +71,22 @@ def test_hub_creates_rooms_once():
     hub = Hub(MemoryHistoryStore())
     assert hub.get("x") is hub.get("x")
     assert hub.get("x") is not hub.get("y")
+
+
+def test_set_topic_broadcasts_and_shows_in_welcome():
+    """Topic goes to everyone incl. setter; later joiners see it."""
+    async def go():
+        room = make_room()
+        a, b = FakeConn(), FakeConn()
+        na = await room.join(a)
+        await room.join(b)
+        assert a.frames[0]["topic"] == ""
+        await room.set_topic(na, "plans")
+        frame = {"type": "topic", "nick": na, "text": "plans"}
+        assert a.frames[-1] == frame and b.frames[-1] == frame
+        c = FakeConn()
+        await room.join(c)
+        assert c.frames[0]["topic"] == "plans"
+        await room.set_topic(na, "")
+        assert room.topic == "" and a.frames[-1]["text"] == ""
+    asyncio.run(go())

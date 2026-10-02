@@ -133,3 +133,19 @@ def test_action_message_flag_and_masking():
             with c.websocket_connect("/ws") as d:
                 hist = d.receive_json()["history"]
                 assert hist[0]["action"] is True and "action" not in hist[1]
+
+
+def test_topic_over_socket():
+    """Topic frames reach everyone; bad_text for an oversized topic."""
+    with client() as c:
+        with c.websocket_connect("/ws") as a, c.websocket_connect("/ws") as b:
+            na = a.receive_json()["nick"]
+            b.receive_json()
+            a.receive_json()  # join of b
+            b.send_json({"type": "topic", "text": " new "})
+            fa, fb = a.receive_json(), b.receive_json()
+            assert fa == fb and fa["text"] == "new" and fa["nick"] != na
+            b.send_json({"type": "topic", "text": "x" * 201})
+            assert b.receive_json()["code"] == "bad_text"
+            with c.websocket_connect("/ws") as d:
+                assert d.receive_json()["topic"] == "new"
