@@ -51,7 +51,7 @@
     <strong>Paranoia</strong>
     {#if s.room}<span class="text-muted text-truncate">#{s.room}</span>{/if}
     <span class="ms-auto text-nowrap">
-      {#if s.nick}you are <strong data-testid="nick">{s.nick}</strong>{/if}
+      you are <strong data-testid="nick">{s.nick ?? '—'}</strong>
       <span class="badge {badge[s.status]}" data-testid="status">
         {s.status}</span>
     </span>
