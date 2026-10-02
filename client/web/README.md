@@ -27,28 +27,23 @@ podman run --rm -v "$PWD":/app:z -w /app docker.io/library/node:24-alpine \
 
 ## Dev server and the backend
 
-The dev server proxies `/ws` (with upgrade) and `/healthz` to
-`VITE_PROXY_TARGET` (default `http://localhost:8000`). Start the server
-as in [server/README.md](../../server/README.md). Because `localhost`
-inside the container is the container itself, share the host network:
-
-```sh
-PODMAN_ARGS="--network host" ./npmw run dev
-```
-
-or keep the default networking and point at the host instead:
-
-```sh
-VITE_PROXY_TARGET=http://host.containers.internal:8000 ./npmw run dev
-```
-
-(the server must then listen on `0.0.0.0`, as in its README).
+Vite always listens on port 5000 inside the container. `./npmw run dev`
+(and `run preview`) publish it on `127.0.0.1:5173` of the host; other
+npmw commands publish nothing, so `./npmw test` works while a dev server
+is running. The dev server proxies `/ws` (with upgrade) and `/healthz` to
+the Paranoia server on the host, `http://host.containers.internal:8000`
+by default. Start the server as in [server/README.md](../../server/README.md);
+it must listen on `0.0.0.0` (the compose setup and the README command
+do), because a server bound to `127.0.0.1` is not reachable from the
+container.
 
 ## Configuration
 
 | Variable            | Default                      | Meaning                  |
 |---------------------|------------------------------|--------------------------|
-| `VITE_PROXY_TARGET` | `http://localhost:8000`      | dev-server proxy target  |
+| `VITE_PROXY_TARGET` | `http://host.containers.internal:8000` | dev-server proxy target (npmw) |
+| `NPMW_PORT`         | `5173`                       | host port for `run dev` / `run preview` |
+| `NPMW_BIND`         | `127.0.0.1`                  | host address; `0.0.0.0` exposes it to the LAN |
 | `VITE_WS_URL`       | derived from `location`      | override, e.g. `ws://h:8000/ws` |
 
 `VITE_WS_URL` is baked in at build time. By default the client connects

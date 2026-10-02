@@ -31,7 +31,7 @@ port 8000. Then pick a client:
 # web (Node runs in Podman; open http://localhost:5173)
 cd client/web
 ./npmw install
-PODMAN_ARGS="--network host" ./npmw run dev
+./npmw run dev
 ```
 
 On first run the launcher creates the client's `.venv` and installs its
