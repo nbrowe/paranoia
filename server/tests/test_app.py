@@ -149,3 +149,25 @@ def test_topic_over_socket():
             assert b.receive_json()["code"] == "bad_text"
             with c.websocket_connect("/ws") as d:
                 assert d.receive_json()["topic"] == "new"
+
+
+def test_op_is_oldest_and_passes_on_leave():
+    """welcome.op is the first connection; leaving hands op to the next."""
+    with client() as c:
+        with c.websocket_connect("/ws") as a:
+            wa = a.receive_json()
+            assert wa["op"] == wa["nick"]
+            with c.websocket_connect("/ws") as b:
+                wb = b.receive_json()
+                assert wb["op"] == wa["nick"]
+                with c.websocket_connect("/ws") as d:
+                    d.receive_json()
+                    b.receive_json()  # join of d
+                    a.close()
+                    assert b.receive_json() == {"type": "leave",
+                                                "nick": wa["nick"]}
+                    assert b.receive_json() == {"type": "op",
+                                                "nick": wb["nick"]}
+                    assert d.receive_json()["type"] == "leave"
+                    assert d.receive_json() == {"type": "op",
+                                                "nick": wb["nick"]}

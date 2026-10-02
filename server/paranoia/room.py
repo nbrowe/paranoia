@@ -22,6 +22,11 @@ class Room:
         self.topic = ""
         self._store = store
 
+    @property
+    def op(self):
+        """Nickname of the operator: the longest-connected user, or ""."""
+        return next(iter(self.users), "")
+
     async def join(self, conn):
         """Admit conn; return its nickname, or None if the room is full.
 
@@ -36,9 +41,12 @@ class Room:
         return nick
 
     async def leave(self, nick):
-        """Remove nick and tell the remaining users."""
+        """Remove nick, tell the others, and announce a new operator."""
+        was_op = nick == self.op
         del self.users[nick]
         await self._broadcast({"type": "leave", "nick": nick})
+        if was_op and self.users:
+            await self._broadcast({"type": "op", "nick": self.op})
 
     async def set_topic(self, nick, text):
         """Set the room topic and tell everyone, including the setter."""
@@ -57,7 +65,7 @@ class Room:
         """Build the welcome frame with history rendered for nick."""
         history = [render(m, nick) for m in self._store.recent(self.name)]
         return {"type": "welcome", "nick": nick, "room": self.name,
-                "users": sorted(self.users), "topic": self.topic,
+                "users": sorted(self.users), "topic": self.topic, "op": self.op,
                 "history": history}
 
     async def _broadcast(self, frame, skip=None):

@@ -73,6 +73,25 @@ def test_hub_creates_rooms_once():
     assert hub.get("x") is not hub.get("y")
 
 
+def test_first_user_is_op_and_op_passes_to_next_oldest():
+    """Welcome names the op; when the op leaves the next oldest gets op."""
+    async def go():
+        room = make_room()
+        a, b, c = FakeConn(), FakeConn(), FakeConn()
+        na, nb, nc = [await room.join(x) for x in (a, b, c)]
+        assert a.frames[0]["op"] == na
+        assert b.frames[0]["op"] == na and c.frames[0]["op"] == na
+        await room.leave(nb)  # non-op leaves: no op frame
+        assert c.frames[-1] == {"type": "leave", "nick": nb}
+        await room.leave(na)
+        assert c.frames[-2:] == [{"type": "leave", "nick": na},
+                                 {"type": "op", "nick": nc}]
+        assert room.op == nc
+        await room.leave(nc)
+        assert room.op == ""
+    asyncio.run(go())
+
+
 def test_set_topic_broadcasts_and_shows_in_welcome():
     """Topic goes to everyone incl. setter; later joiners see it."""
     async def go():
