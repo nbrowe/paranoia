@@ -2,7 +2,8 @@
  * Chat state reducer: applies server frames (docs/protocol.md) and UI
  * actions to an immutable state object. Pure JS, no Svelte or DOM.
  * Scope: welcome/join/leave/message/error frames, connection status, the
- * sticky omit list. Limitations: the timeline is capped at MAX_ITEMS
+ * sticky omit list, user ordering (own nick first). A disconnect clears
+ * identity, users and omit but keeps the timeline. Limitations: the timeline is capped at MAX_ITEMS
  * entries; unknown frame types are ignored (protocol forward compat).
  */
 
@@ -66,6 +67,17 @@ export function pruneOmit(omit, users) {
   return omit.filter((n) => users.includes(n))
 }
 
+/**
+ * Order users for display: own nick first, the rest alphabetical.
+ * @param {string[]} users nicknames
+ * @param {string|null} nick own nick
+ * @returns {string[]} sorted copy
+ */
+export function sortUsers(users, nick) {
+  const rest = users.filter((n) => n !== nick).sort()
+  return users.includes(nick) ? [nick, ...rest] : rest
+}
+
 const frameHandlers = {
   /** Reset everything from the server's snapshot (new nick on reconnect). */
   welcome(state, f) {
@@ -74,7 +86,7 @@ const frameHandlers = {
       status: 'open',
       nick: f.nick,
       room: f.room,
-      users: [...f.users].sort(),
+      users: sortUsers(f.users, f.nick),
       omit: pruneOmit(state.omit, f.users),
       items: [],
       seq: 0,
@@ -88,7 +100,7 @@ const frameHandlers = {
   /** Add a user and a notice. */
   join(state, f) {
     const users = state.users.includes(f.nick)
-      ? state.users : [...state.users, f.nick].sort()
+      ? state.users : sortUsers([...state.users, f.nick], state.nick)
     return addItem({ ...state, users }, notice('info', `${f.nick} joined`))
   },
 
@@ -123,6 +135,8 @@ export function applyFrame(state, frame) {
 
 /**
  * Record a connection status change; announces an unexpected drop once.
+ * Going disconnected clears nick, users and omit (they are stale until
+ * the next welcome) but keeps the timeline readable.
  * @param {object} state current state
  * @param {string} status connecting | open | disconnected
  * @returns {object} new state
@@ -130,6 +144,9 @@ export function applyFrame(state, frame) {
 export function setStatus(state, status) {
   if (status === state.status) return state
   const next = { ...state, status }
+  if (status === 'disconnected') {
+    Object.assign(next, { nick: null, users: [], omit: [] })
+  }
   if (status === 'disconnected' && state.status === 'open') {
     return addItem(next, notice('error', 'Disconnected. Reconnecting...'))
   }

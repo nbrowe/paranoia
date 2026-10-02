@@ -5,7 +5,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import {
-  initialState, applyFrame, setStatus, toggleOmit, clearOmit, MAX_ITEMS,
+  initialState, applyFrame, setStatus, sortUsers, toggleOmit, clearOmit, MAX_ITEMS,
 } from './state.js'
 
 const msg = (id, extra = {}) => ({
@@ -29,7 +29,7 @@ describe('welcome', () => {
     const s = welcomed({ history: [msg(1), msg(2, { masked: true })] })
     expect(s.status).toBe('open')
     expect(s.nick).toBe('pikachu')
-    expect(s.users).toEqual(['gengar', 'mew', 'pikachu'])
+    expect(s.users).toEqual(['pikachu', 'gengar', 'mew'])
     const kinds = s.items.map((i) => i.kind)
     expect(kinds).toEqual(['message', 'message', 'notice'])
     expect(s.items[1].masked).toBe(true)
@@ -137,5 +137,47 @@ describe('status', () => {
     s = setStatus(s, 'disconnected')
     expect(s.items).toHaveLength(count)
     expect(s.items.at(-1).text).toMatch(/Disconnected/)
+  })
+})
+
+describe('sortUsers', () => {
+  it('pins own nick first and sorts the rest', () => {
+    expect(sortUsers(['gengar', 'mew', 'abra', 'zubat'], 'mew'))
+      .toEqual(['mew', 'abra', 'gengar', 'zubat'])
+  })
+
+  it('sorts alone when own nick is absent', () => {
+    expect(sortUsers(['mew', 'abra'], null)).toEqual(['abra', 'mew'])
+  })
+
+  it('keeps own nick first through welcome and join', () => {
+    let s = welcomed({ nick: 'mew', users: ['gengar', 'mew', 'abra'] })
+    expect(s.users).toEqual(['mew', 'abra', 'gengar'])
+    s = applyFrame(s, { type: 'join', nick: 'aerodactyl' })
+    expect(s.users).toEqual(['mew', 'abra', 'aerodactyl', 'gengar'])
+  })
+})
+
+describe('disconnect', () => {
+  it('clears nick, users and omit but keeps the timeline', () => {
+    let s = toggleOmit(welcomed({ history: [msg(1)] }), 'mew')
+    const before = s.items.length
+    s = setStatus(s, 'disconnected')
+    expect(s.nick).toBeNull()
+    expect(s.users).toEqual([])
+    expect(s.omit).toEqual([])
+    expect(s.items).toHaveLength(before + 1)  // plus the drop notice
+    expect(s.items[0].kind).toBe('message')
+  })
+
+  it('stays cleared while reconnecting, welcome restores', () => {
+    let s = setStatus(welcomed(), 'disconnected')
+    s = setStatus(s, 'connecting')
+    expect(s.users).toEqual([])
+    s = applyFrame(s, {
+      type: 'welcome', nick: 'abra', room: 'lobby', users: ['abra'],
+      history: [],
+    })
+    expect(s.nick).toBe('abra')
   })
 })

@@ -51,14 +51,14 @@
     <strong>Paranoia</strong>
     {#if s.room}<span class="text-muted text-truncate">#{s.room}</span>{/if}
     <span class="ms-auto text-nowrap">
-      {#if s.nick}you are <strong data-testid="nick">{s.nick}</strong>{/if}
+      you are <strong data-testid="nick">{s.nick ?? '—'}</strong>
       <span class="badge {badge[s.status]}" data-testid="status">
         {s.status}</span>
     </span>
   </header>
 
   <div
-    class="d-flex flex-column flex-md-row flex-grow-1 overflow-hidden">
+    class="panes d-flex flex-column flex-md-row flex-grow-1">
     <MessageList items={s.items} nick={s.nick} />
     <UserList
       users={s.users} nick={s.nick} omit={s.omit}
@@ -70,3 +70,22 @@
     onclear={() => { s = clearOmit(s) }}
     onremove={(n) => { s = toggleOmit(s, n) }} />
 </div>
+
+<style>
+  /* Phones: an expanded user list scrolls with this pane instead of in
+     its own box; the timeline keeps a usable minimum height. */
+  .panes {
+    overflow: auto;
+  }
+  .panes :global([data-testid="timeline"]) {
+    min-height: 50vh;
+  }
+  @media (min-width: 768px) {
+    .panes {
+      overflow: hidden;
+    }
+    .panes :global([data-testid="timeline"]) {
+      min-height: 0;
+    }
+  }
+</style>
