@@ -73,7 +73,7 @@ bootstrap() {
   fi
   echo "paranoia: setting up $1 (first run or requirements changed)..." >&2
   [ -x "$venv/bin/python" ] || "$PY" -m venv "$venv"
-  "$venv/bin/pip" install -q -r "$dir/requirements.txt" ||
+  "$venv/bin/pip" install -q --disable-pip-version-check -r "$dir/requirements.txt" ||
     die "pip install failed for $1; fix the error above and re-run"
   printf '%s\n' "$sum" >"$venv/.requirements.stamp"
 }
