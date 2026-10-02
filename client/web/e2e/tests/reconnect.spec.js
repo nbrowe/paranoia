@@ -6,12 +6,10 @@
  * in parallel with other tests (the config uses a single worker).
  */
 import { test, expect } from '@playwright/test'
-import { WS_EFFECT_LOOP, WS_EFFECT_LOOP_REASON } from '../lib/known-bugs.js'
 import { User, uniqueRoom, isPokemon } from '../lib/user.js'
 import { restartServer } from '../lib/stack.js'
 
 test('shows disconnected, recovers and works again', async ({ browser }) => {
-  test.fixme(WS_EFFECT_LOOP, WS_EFFECT_LOOP_REASON)
   const room = uniqueRoom()
   const a = await User.join(browser, room)
   await a.say('before restart')
@@ -35,7 +33,6 @@ test('shows disconnected, recovers and works again', async ({ browser }) => {
 
 test('shows a disconnected state while the server is down',
   async ({ browser }) => {
-    test.fixme(WS_EFFECT_LOOP, WS_EFFECT_LOOP_REASON)
     const room = uniqueRoom()
     const a = await User.join(browser, room)
     const down = expect(a.status).toHaveText('disconnected')

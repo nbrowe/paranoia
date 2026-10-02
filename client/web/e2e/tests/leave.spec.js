@@ -4,11 +4,9 @@
  * departed user's context is closed, not navigated away.
  */
 import { test, expect } from '@playwright/test'
-import { WS_EFFECT_LOOP, WS_EFFECT_LOOP_REASON } from '../lib/known-bugs.js'
 import { User, uniqueRoom } from '../lib/user.js'
 
 test('leaving user is removed and pruned from omit', async ({ browser }) => {
-  test.fixme(WS_EFFECT_LOOP, WS_EFFECT_LOOP_REASON)
   const room = uniqueRoom()
   const a = await User.join(browser, room)
   const b = await User.join(browser, room)

@@ -15,9 +15,6 @@ the real server image, one browser context per chat user.
 | `tests/history.spec.js`   | late joiner sees history masked per recipient   |
 | `tests/layout.spec.js`    | 390px viewport: no overflow, checkbox reachable |
 
-`lib/known-bugs.js` lists app bugs that block tests; flagged tests run as
-`test.fixme` until the flag is set to `false`.
-
 ## Layout
 
 | Path             | Role                                                    |

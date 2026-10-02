@@ -7,7 +7,6 @@
  */
 import { readFileSync } from 'node:fs'
 import { test, expect } from '@playwright/test'
-import { WS_EFFECT_LOOP, WS_EFFECT_LOOP_REASON } from '../lib/known-bugs.js'
 import { User, uniqueRoom } from '../lib/user.js'
 import { SERVER_URL } from '../lib/stack.js'
 
@@ -31,7 +30,6 @@ async function rawClient(room) {
 }
 
 test('late joiner gets history masked per recipient', async ({ browser }) => {
-  test.fixme(WS_EFFECT_LOOP, WS_EFFECT_LOOP_REASON)
   const room = uniqueRoom()
   const raw = await rawClient(room)
   raw.send(JSON.stringify({ type: 'say', text: 'for nobody else', omit: NICKS }))

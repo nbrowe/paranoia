@@ -4,11 +4,9 @@
  * messages. Limitations: nick randomness is only checked against the pool.
  */
 import { test, expect } from '@playwright/test'
-import { WS_EFFECT_LOOP, WS_EFFECT_LOOP_REASON } from '../lib/known-bugs.js'
 import { User, uniqueRoom, isPokemon } from '../lib/user.js'
 
 test('connects, shows nick, user list and greeting', async ({ browser }) => {
-  test.fixme(WS_EFFECT_LOOP, WS_EFFECT_LOOP_REASON)
   const room = uniqueRoom()
   const a = await User.join(browser, room)
 

@@ -5,11 +5,9 @@
  * whitespace is checked on the DOM text plus its pre-wrap style.
  */
 import { test, expect } from '@playwright/test'
-import { WS_EFFECT_LOOP, WS_EFFECT_LOOP_REASON } from '../lib/known-bugs.js'
 import { User, uniqueRoom } from '../lib/user.js'
 
 test('omitted user sees asterisks, others plaintext', async ({ browser }) => {
-  test.fixme(WS_EFFECT_LOOP, WS_EFFECT_LOOP_REASON)
   const room = uniqueRoom()
   const a = await User.join(browser, room)
   const b = await User.join(browser, room)
