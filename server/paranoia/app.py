@@ -9,7 +9,7 @@ rate limiting or origin checking.
 from fastapi import FastAPI, WebSocket
 
 from paranoia.config import Settings
-from paranoia.protocol import ProtocolError, error_frame, parse_say
+from paranoia.protocol import ProtocolError, error_frame, parse_frame
 from paranoia.room import Hub
 from paranoia.storage import MemoryHistoryStore
 
@@ -40,7 +40,7 @@ def create_app(settings=None, store=None):
         try:
             await _serve(ws, chat, nick, settings.max_text)
         finally:
-            await chat.leave(nick)
+            await chat.leave(nick, ws)
 
     return app
 
@@ -52,11 +52,15 @@ async def _serve(ws, chat, nick, max_text):
         if event["type"] == "websocket.disconnect":
             return
         try:
-            text, omit = parse_say(event.get("text"), max_text)
+            kind, args = parse_frame(event.get("text"), max_text)
+            if kind == "say":
+                await chat.say(nick, *args)
+            elif kind == "topic":
+                await chat.set_topic(nick, *args)
+            elif kind == "kick":
+                await chat.kick(nick, *args)
         except ProtocolError as e:
             await ws.send_json(error_frame(e.code, e.message))
-            continue
-        await chat.say(nick, text, omit)
 
 
 app = create_app()

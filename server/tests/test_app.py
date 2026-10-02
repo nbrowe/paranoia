@@ -1,7 +1,10 @@
 """End-to-end tests over Starlette's TestClient WebSocket support."""
 import json
 
+import pytest
+
 from starlette.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
 
 from paranoia.app import create_app
 from paranoia.config import Settings
@@ -114,3 +117,91 @@ class _Dead:
 
     async def send_json(self, frame):
         """Discard the frame."""
+
+
+def test_action_message_flag_and_masking():
+    """/me messages carry action=true to all, with normal masking."""
+    with client() as c:
+        with c.websocket_connect("/ws") as a, c.websocket_connect("/ws") as b:
+            a.receive_json()
+            nb = b.receive_json()["nick"]
+            a.receive_json()  # join of b
+            a.send_json({"type": "say", "text": "waves", "action": True,
+                         "omit": [nb]})
+            ma, mb = a.receive_json(), b.receive_json()
+            assert ma["action"] is True and ma["text"] == "waves"
+            assert mb["action"] is True and mb["text"] == "*****"
+            a.send_json({"type": "say", "text": "plain"})
+            assert "action" not in a.receive_json()
+            with c.websocket_connect("/ws") as d:
+                hist = d.receive_json()["history"]
+                assert hist[0]["action"] is True and "action" not in hist[1]
+
+
+def test_topic_over_socket():
+    """Topic frames reach everyone; bad_text for an oversized topic."""
+    with client() as c:
+        with c.websocket_connect("/ws") as a, c.websocket_connect("/ws") as b:
+            na = a.receive_json()["nick"]
+            b.receive_json()
+            a.receive_json()  # join of b
+            b.send_json({"type": "topic", "text": " new "})
+            fa, fb = a.receive_json(), b.receive_json()
+            assert fa == fb and fa["text"] == "new" and fa["nick"] != na
+            b.send_json({"type": "topic", "text": "x" * 201})
+            assert b.receive_json()["code"] == "bad_text"
+            with c.websocket_connect("/ws") as d:
+                assert d.receive_json()["topic"] == "new"
+
+
+def test_op_is_oldest_and_passes_on_leave():
+    """welcome.op is the first connection; leaving hands op to the next."""
+    with client() as c:
+        with c.websocket_connect("/ws") as a:
+            wa = a.receive_json()
+            assert wa["op"] == wa["nick"]
+            with c.websocket_connect("/ws") as b:
+                wb = b.receive_json()
+                assert wb["op"] == wa["nick"]
+                with c.websocket_connect("/ws") as d:
+                    d.receive_json()
+                    b.receive_json()  # join of d
+                    a.close()
+                    assert b.receive_json() == {"type": "leave",
+                                                "nick": wa["nick"]}
+                    assert b.receive_json() == {"type": "op",
+                                                "nick": wb["nick"]}
+                    assert d.receive_json()["type"] == "leave"
+                    assert d.receive_json() == {"type": "op",
+                                                "nick": wb["nick"]}
+
+
+def test_kick_flow_over_sockets():
+    """Op kicks b: all get kick, b's socket closes, no leave follows."""
+    with client() as c:
+        with c.websocket_connect("/ws") as a, \
+             c.websocket_connect("/ws") as b, \
+             c.websocket_connect("/ws") as d:
+            na = a.receive_json()["nick"]
+            nb = b.receive_json()["nick"]
+            d.receive_json()
+            a.receive_json(); a.receive_json()  # joins of b, d
+            b.receive_json()                    # join of d
+            b.send_json({"type": "kick", "nick": na})
+            assert b.receive_json()["code"] == "not_op"
+            a.send_json({"type": "kick", "nick": na})
+            assert a.receive_json()["code"] == "bad_target"
+            a.send_json({"type": "kick", "nick": "ghost"})
+            assert a.receive_json()["code"] == "no_such_nick"
+            a.send_json({"type": "kick", "nick": nb, "reason": "bye"})
+            frame = {"type": "kick", "nick": nb, "by": na, "reason": "bye"}
+            assert a.receive_json() == frame
+            assert b.receive_json() == frame
+            assert d.receive_json() == frame
+            with pytest.raises(WebSocketDisconnect):
+                b.receive_json()
+            a.send_json({"type": "say", "text": "after"})
+            assert a.receive_json()["text"] == "after"  # no leave in between
+            assert d.receive_json()["text"] == "after"
+            with c.websocket_connect("/ws") as e:
+                assert nb not in e.receive_json()["users"]

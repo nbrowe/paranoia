@@ -17,7 +17,7 @@ class HistoryStore(ABC):
     """Interface every storage backend implements (sync, called inline)."""
 
     @abstractmethod
-    def append(self, room, sender, text, omitted):
+    def append(self, room, sender, text, omitted, action=False):
         """Persist a new message for room and return the stored Message."""
 
     @abstractmethod
@@ -35,11 +35,12 @@ class MemoryHistoryStore(HistoryStore):
         self._history = {}
         self._last_id = {}
 
-    def append(self, room, sender, text, omitted):
+    def append(self, room, sender, text, omitted, action=False):
         """Assign the next id and timestamp, store, and return the message."""
         mid = self._last_id.get(room, 0) + 1
         self._last_id[room] = mid
-        msg = Message(mid, self._clock(), sender, text, frozenset(omitted))
+        msg = Message(mid, self._clock(), sender, text, frozenset(omitted),
+                      action)
         self._history.setdefault(room, deque(maxlen=self._limit)).append(msg)
         return msg
 
