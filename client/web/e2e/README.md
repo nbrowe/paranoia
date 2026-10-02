@@ -13,6 +13,7 @@ the real server image, one browser context per chat user.
 | `tests/leave.spec.js`     | leaver removed from lists, omit selection pruned|
 | `tests/reconnect.spec.js` | server restart: offline (list/nick cleared), recovery, new nick |
 | `tests/history.spec.js`   | late joiner sees history masked per recipient   |
+| `tests/theme.spec.js`     | theme selector: auto follows OS, choice persists, no storage |
 | `tests/layout.spec.js`    | 390px and desktop: no overflow, users toggle, long list scrolls in its box |
 
 ## Layout
