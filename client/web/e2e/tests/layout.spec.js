@@ -116,7 +116,7 @@ for (const width of [320, 390]) {
         headerOverflow: h.scrollWidth - h.clientWidth,
         logoRight: logo.right,
         logoVisible: logo.width > 0,
-        themeRight: r(h.querySelector('select')).right,
+        themeRight: r(h.querySelector("[data-testid=theme]")).right,
       }
     })
     expect(m.overflow).toBe(0)

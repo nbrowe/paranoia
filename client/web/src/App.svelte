@@ -15,7 +15,7 @@
   import MessageList from './components/MessageList.svelte'
   import UserList from './components/UserList.svelte'
   import MessageInput from './components/MessageInput.svelte'
-  import ThemeSelect from './components/ThemeSelect.svelte'
+  import ThemeToggle from './components/ThemeToggle.svelte'
 
   // Raw state: the reducer returns fresh objects, no deep proxying needed.
   let s = $state.raw(initialState())
@@ -66,7 +66,7 @@
         <strong data-testid="nick">{s.nick ?? '—'}</strong></span>
       <span class="badge {badge[s.status]}" data-testid="status">
         {label[s.status]}</span>
-      <ThemeSelect />
+      <ThemeToggle />
     </span>
   </header>
 
