@@ -157,3 +157,27 @@ describe('sortUsers', () => {
     expect(s.users).toEqual(['mew', 'abra', 'aerodactyl', 'gengar'])
   })
 })
+
+describe('disconnect', () => {
+  it('clears nick, users and omit but keeps the timeline', () => {
+    let s = toggleOmit(welcomed({ history: [msg(1)] }), 'mew')
+    const before = s.items.length
+    s = setStatus(s, 'disconnected')
+    expect(s.nick).toBeNull()
+    expect(s.users).toEqual([])
+    expect(s.omit).toEqual([])
+    expect(s.items).toHaveLength(before + 1)  // plus the drop notice
+    expect(s.items[0].kind).toBe('message')
+  })
+
+  it('stays cleared while reconnecting, welcome restores', () => {
+    let s = setStatus(welcomed(), 'disconnected')
+    s = setStatus(s, 'connecting')
+    expect(s.users).toEqual([])
+    s = applyFrame(s, {
+      type: 'welcome', nick: 'abra', room: 'lobby', users: ['abra'],
+      history: [],
+    })
+    expect(s.nick).toBe('abra')
+  })
+})

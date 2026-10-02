@@ -2,7 +2,8 @@
  * Chat state reducer: applies server frames (docs/protocol.md) and UI
  * actions to an immutable state object. Pure JS, no Svelte or DOM.
  * Scope: welcome/join/leave/message/error frames, connection status, the
- * sticky omit list, user ordering (own nick first). Limitations: the timeline is capped at MAX_ITEMS
+ * sticky omit list, user ordering (own nick first). A disconnect clears
+ * identity, users and omit but keeps the timeline. Limitations: the timeline is capped at MAX_ITEMS
  * entries; unknown frame types are ignored (protocol forward compat).
  */
 
@@ -133,13 +134,19 @@ export function applyFrame(state, frame) {
 }
 
 /**
- * Record a connection status change; announces an unexpected drop once. * @param {object} state current state
+ * Record a connection status change; announces an unexpected drop once.
+ * Going disconnected clears nick, users and omit (they are stale until
+ * the next welcome) but keeps the timeline readable.
+ * @param {object} state current state
  * @param {string} status connecting | open | disconnected
  * @returns {object} new state
  */
 export function setStatus(state, status) {
   if (status === state.status) return state
   const next = { ...state, status }
+  if (status === 'disconnected') {
+    Object.assign(next, { nick: null, users: [], omit: [] })
+  }
   if (status === 'disconnected' && state.status === 'open') {
     return addItem(next, notice('error', 'Disconnected. Reconnecting...'))
   }
