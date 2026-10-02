@@ -4,8 +4,8 @@
  * `/`; unknown commands are reported locally. parseInput is pure text
  * parsing; handleInput applies the result to the chat state and returns
  * the wire frames to send. Pure JS, no Svelte or DOM.
- * Limitations: /topic with no argument shows the topic, so it cannot clear
- * it from here; permission checks (/kick needs the operator) are left to
+ * Limitations: `/topic -` clears the topic, so a topic that is just "-"
+ * cannot be set; permission checks (/kick needs the operator) are left to
  * the server's error frames.
  */
 import { buildSay, buildTopic, buildKick } from './protocol.js'
@@ -17,7 +17,7 @@ export const HELP_LINES = [
   '/omit [nick...] - hide your messages from these users; alone, clear',
   '/me <text> - send an action ("* nick text")',
   '/kick <nick> [reason] - remove a user (room operator only)',
-  '/topic [text] - set the topic; alone, show it',
+  '/topic [text] - set the topic; alone, show it; "-", clear it',
   '//text - send a message that starts with a slash',
 ]
 
@@ -70,12 +70,13 @@ function runOmit(state, args) {
 }
 
 /**
- * Apply /topic: show the current topic locally, or build the frame.
+ * Apply /topic: show the topic locally, clear it (`-`), or set it.
  * @param {object} state chat state
- * @param {string} args new topic, or empty to show
+ * @param {string} args new topic, `-` to clear, or empty to show
  * @returns {{state: object, frames: string[]}} result as for handleInput
  */
 function runTopic(state, args) {
+  if (args === '-') return { state, frames: [buildTopic('')] }
   if (args) return { state, frames: [buildTopic(args)] }
   const line = state.topic ? `Topic: ${state.topic}` : 'No topic is set'
   return { state: addNotices(state, 'info', [line]), frames: [] }

@@ -90,7 +90,7 @@ conventions" in [docs/protocol.md](../../docs/protocol.md)):
 | `/omit [nick...]`      | set the sticky omit list; alone, clear it       |
 | `/me <text>`           | action message, shown as `* nick text`          |
 | `/kick <nick> [reason]`| remove a user (room operator only, server-checked) |
-| `/topic [text]`        | set the topic; alone, show it locally           |
+| `/topic [text]`        | set the topic; alone, show it locally; `-` clears it |
 | `//text`               | send `/text` literally                          |
 
 Anything else starting with `/` is reported locally as an unknown
