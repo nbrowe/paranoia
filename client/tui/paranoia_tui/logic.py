@@ -21,7 +21,7 @@ HELP = [
     "/omit [nick ...]      hide your messages from nicks; bare clears",
     "/me <text>            send an action (* nick text)",
     "/kick <nick> [why]    remove a user (room operator only)",
-    "/topic [text]         show the topic, or set it",
+    "/topic [text|-]       show the topic, set it, or clear it with -",
     "/quit                 exit",
     "//text                send a message starting with a literal /",
     "Tab after /omit or /kick completes nicks in the room",
@@ -32,8 +32,8 @@ class Command(NamedTuple):
     """Parsed user input.
 
     `kind` is quit/help/omit/me/kick/topic/say/usage/unknown/empty. `arg`
-    is the payload: omit list, text, (nick, reason), topic text (None to
-    show it) or a usage string.
+    is the payload: omit list, text, (nick, reason), topic text ("" to
+    clear it, None to show it) or a usage string.
     """
 
     kind: str
@@ -67,7 +67,7 @@ def parse_input(raw):
     if cmd == "/me":
         return Command("me", rest) if rest else Command("usage", USAGE[cmd])
     if cmd == "/topic":
-        return Command("topic", rest or None)
+        return Command("topic", "" if rest == "-" else rest or None)
     if cmd == "/kick":
         nick, _, reason = rest.partition(" ")
         if not nick:

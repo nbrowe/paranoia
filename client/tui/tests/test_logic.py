@@ -26,6 +26,7 @@ def test_parse_new_commands():
     assert logic.parse_input("/me").kind == "usage"
     assert logic.parse_input("/topic") == ("topic", None)
     assert logic.parse_input("/topic new  title") == ("topic", "new  title")
+    assert logic.parse_input("/topic -") == ("topic", "")
     assert logic.parse_input("/kick bob") == ("kick", ("bob", ""))
     assert logic.parse_input("/kick bob be  nice") == (
         "kick", ("bob", "be  nice"))
@@ -130,6 +131,7 @@ def test_topic_state():
                "topic": "t", "history": []}
     assert "topic: t" in logic.format_event(welcome, "me")[1].text
     assert "topic: t" in logic.status_text("me", [], "t")
+    assert "topic" not in logic.status_text("me", [], "")
 
 
 def test_complete_prefix_and_cycle():
