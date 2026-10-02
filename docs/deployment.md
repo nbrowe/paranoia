@@ -29,6 +29,12 @@ podman-compose up -d --build
 docker compose up -d --build
 ```
 
+Verified with podman-compose 1.6.0 (Podman 5.8.2). Podman builds the
+image in OCI format here, so the image itself carries no `HEALTHCHECK`
+(it warns and ignores it); the `healthcheck:` block in `compose.yaml` is
+applied when the container is created, so health reporting still works.
+`restart: unless-stopped` restarts the container after a crash.
+
 Clients connect to `ws://<host>:8000/ws?room=lobby`; see
 [protocol.md](protocol.md).
 
