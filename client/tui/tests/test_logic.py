@@ -101,3 +101,32 @@ def test_status_and_wrap():
     assert "a, b" in logic.status_text("me", ["a", "b"])
     assert logic.wrap("abcde", 2) == ["ab", "cd", "e"]
     assert logic.wrap("", 5) == [""]
+
+
+def test_new_frames_render():
+    """Action, topic, kick and op frames render; kick prunes the roster."""
+    act = {"ts": 0, "sender": "ash", "text": "waves", "action": True}
+    assert " * ash waves" in logic.format_message(act, "me").text
+    top = {"type": "topic", "nick": "a", "text": "hi"}
+    assert logic.format_event(top, "me")[0].text == "* a set the topic: hi"
+    assert "cleared" in logic.format_event({**top, "text": ""}, "me")[0].text
+    kick = {"type": "kick", "nick": "b", "by": "a", "reason": "spam"}
+    assert logic.format_event(kick, "me")[0].text == \
+        "* b was kicked by a: spam"
+    assert logic.format_event({**kick, "nick": "me"}, "me")[0].style == "error"
+    assert logic.is_self_kick({**kick, "nick": "me"}, "me")
+    assert not logic.is_self_kick(kick, "me")
+    assert logic.update_users(["a", "b"], kick) == ["a"]
+    assert "operator" in logic.format_event(
+        {"type": "op", "nick": "c"}, "me")[0].text
+
+
+def test_topic_state():
+    """welcome and topic frames set the stored topic; others keep it."""
+    assert logic.update_topic("", {"type": "welcome", "topic": "t"}) == "t"
+    assert logic.update_topic("t", {"type": "topic", "text": "u"}) == "u"
+    assert logic.update_topic("t", {"type": "join"}) == "t"
+    welcome = {"type": "welcome", "nick": "me", "room": "r", "users": [],
+               "topic": "t", "history": []}
+    assert "topic: t" in logic.format_event(welcome, "me")[1].text
+    assert "topic: t" in logic.status_text("me", [], "t")
