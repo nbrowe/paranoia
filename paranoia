@@ -53,13 +53,19 @@ check_python() {
       "(e.g. python3-venv on Debian/Ubuntu)"
 }
 
-# Verify tkinter imports and a display is available (desktop client only).
+# Verify tkinter imports and, on Linux, that a display is advertised
+# (desktop client only). The display pre-check only catches the common
+# headless case early: Tk on Linux speaks X11 and needs DISPLAY (also
+# set under XWayland and by SSH X forwarding). It never inspects or
+# compares the value, and is skipped on other OSes where Tk ignores it.
 check_desktop() {
   "$PY" -c 'import tkinter' 2>/dev/null ||
     die "tkinter is missing; install your distro's tkinter package" \
       "(e.g. tk, python3-tkinter or python3-tk)"
+  [ "$(uname -s)" = Linux ] || return 0
   [ -n "${DISPLAY:-}" ] ||
-    die "DISPLAY is not set; run from a graphical session (or set DISPLAY)"
+    die "no display available (DISPLAY is empty); run from a graphical" \
+      "session, or enable X forwarding when using ssh (ssh -X)"
 }
 
 # Create client/<name>/.venv if missing and (re)install requirements.txt
