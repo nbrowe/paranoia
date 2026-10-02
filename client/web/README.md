@@ -46,6 +46,12 @@ container.
 | `NPMW_BIND`         | `127.0.0.1`                  | host address; `0.0.0.0` exposes it to the LAN |
 | `VITE_WS_URL`       | derived from `location`      | override, e.g. `ws://h:8000/ws` |
 
+| `VITE_BUILD_ID`     | `git rev-parse HEAD`, first 16 chars (`dev` without git) | build id in the settings menu |
+
+`./npmw` and `e2e/run` compute `VITE_BUILD_ID` on the host (the Node
+container has no git) and pass it in; Vite bakes it into the bundle.
+For a raw `podman run` or CI build, export it yourself.
+
 `VITE_WS_URL` is baked in at build time. By default the client connects
 to `ws(s)://<page host>/ws?room=<room>`, where the room is the page's
 `?room=` query parameter (default `lobby`).
