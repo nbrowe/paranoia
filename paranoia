@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+# Launcher for the Paranoia clients and server.
+#
+# Purpose: one command to start a client from a fresh clone. Creates the
+#   client's virtualenv and installs its requirements on first use, then
+#   execs the client so curses/Tk see the terminal and signals directly.
+# Scope:   subcommands tui, desktop, server. Works from any directory and
+#   through a symlink (the repo root is resolved from this file).
+# Limitations: Linux/bash only. Needs python3 >= 3.9 with venv and pip
+#   (and tkinter for the desktop client). Network is used only by pip, on
+#   first run or after a client's requirements.txt changes. The web client
+#   is not wrapped; use client/web/npmw. See README.md for details.
+#
+# Environment:
+#   PARANOIA_URL     WebSocket URL passed to clients as --url (an explicit
+#                    --url argument wins); client default if unset.
+#   PARANOIA_PYTHON  Python interpreter to build venvs with (default python3).
+
+set -eu
+
+ROOT="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+PY="${PARANOIA_PYTHON:-python3}"
+
+# Print an error message and exit 1.
+die() {
+  printf 'paranoia: %s\n' "$*" >&2
+  exit 1
+}
+
+# Print usage; exit status is the first argument (default 0).
+usage() {
+  cat <<'EOF'
+Usage: ./paranoia <command> [args...]
+
+  tui [--url URL] [--room NAME]      terminal client
+  desktop [--url URL] [--room NAME]  Tk desktop client
+  server [compose args...]           server via compose (default: up -d --build)
+  help                               this message
+
+Set PARANOIA_URL to change the default server URL (e.g. ws://host:8000/ws).
+EOF
+  exit "${1:-0}"
+}
+
+# Verify the interpreter exists, is new enough and can build venvs with pip.
+check_python() {
+  command -v "$PY" >/dev/null 2>&1 ||
+    die "$PY not found; install Python 3.9 or newer (or set PARANOIA_PYTHON)"
+  "$PY" -c 'import sys; sys.exit(sys.version_info < (3, 9))' ||
+    die "$PY is older than 3.9; install a newer Python or set PARANOIA_PYTHON"
+  "$PY" -c 'import venv, ensurepip' 2>/dev/null ||
+    die "$PY lacks venv/ensurepip; install your distro's python venv package" \
+      "(e.g. python3-venv on Debian/Ubuntu)"
+}
+
+# Verify tkinter imports and a display is available (desktop client only).
+check_desktop() {
+  "$PY" -c 'import tkinter' 2>/dev/null ||
+    die "tkinter is missing; install your distro's tkinter package" \
+      "(e.g. tk, python3-tkinter or python3-tk)"
+  [ -n "${DISPLAY:-}" ] ||
+    die "DISPLAY is not set; run from a graphical session (or set DISPLAY)"
+}
+
+# Create client/<name>/.venv if missing and (re)install requirements.txt
+# whenever its checksum differs from the stamp stored in the venv.
+bootstrap() {
+  local dir="$ROOT/client/$1" venv="$ROOT/client/$1/.venv" sum
+  sum="$(cksum <"$dir/requirements.txt")"
+  if [ -x "$venv/bin/python" ] &&
+    [ "$(cat "$venv/.requirements.stamp" 2>/dev/null)" = "$sum" ]; then
+    return 0
+  fi
+  echo "paranoia: setting up $1 (first run or requirements changed)..." >&2
+  [ -x "$venv/bin/python" ] || "$PY" -m venv "$venv"
+  "$venv/bin/pip" install -q --disable-pip-version-check -r "$dir/requirements.txt" ||
+    die "pip install failed for $1; fix the error above and re-run"
+  printf '%s\n' "$sum" >"$venv/.requirements.stamp"
+}
+
+# Check, bootstrap and exec a client: run_client <dir> <module> [args...].
+run_client() {
+  local name="$1" module="$2"
+  shift 2
+  check_python
+  [ "$name" = desktop ] && check_desktop
+  bootstrap "$name"
+  cd "$ROOT/client/$name"
+  # Own --url goes first so an explicit --url in "$@" overrides it.
+  exec "$ROOT/client/$name/.venv/bin/python" -m "$module" \
+    ${PARANOIA_URL:+--url "$PARANOIA_URL"} "$@"
+}
+
+# Run the server through podman-compose (or docker compose) from the root.
+run_server() {
+  local compose
+  if command -v podman-compose >/dev/null 2>&1; then
+    compose=(podman-compose)
+  elif command -v docker >/dev/null 2>&1; then
+    compose=(docker compose)
+  else
+    die "need podman-compose or docker; see docs/deployment.md"
+  fi
+  [ $# -gt 0 ] || set -- up -d --build
+  cd "$ROOT"
+  exec "${compose[@]}" "$@"
+}
+
+[ $# -gt 0 ] || usage 1
+cmd="$1"
+shift
+case "$cmd" in
+  tui) run_client tui paranoia_tui "$@" ;;
+  desktop) run_client desktop paranoia_desktop "$@" ;;
+  server) run_server "$@" ;;
+  help | -h | --help) usage 0 ;;
+  *) printf 'paranoia: unknown command: %s\n\n' "$cmd" >&2; usage 1 >&2 ;;
+esac
