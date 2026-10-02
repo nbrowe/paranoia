@@ -24,4 +24,5 @@ test('connects, shows nick, user list and greeting', async ({ browser }) => {
   await expect(a.messages).toHaveCount(0)
   await expect(a.omitBar).toHaveText('Omitting nobody')
   await expect(a.input).toBeEnabled()
+  await expect(a.input).toBeFocused()
 })

@@ -1,12 +1,19 @@
 <!--
   Message input bar with the active omit list shown above it. Submitting
   calls onsend(text); the field clears only if the frame was sent.
-  Limitations: length (500) is enforced by the server, not here.
+  The field takes focus when it becomes enabled, unless the user already
+  focused something else. Limitations: length (500) is enforced by the
+  server, not here.
 -->
 <script>
   let { omit, disabled, onsend, onclear, onremove } = $props()
   let text = $state('')
   let input
+
+  $effect(() => {
+    const idle = [null, document.body].includes(document.activeElement)
+    if (!disabled && idle) input.focus()
+  })
 
   /**
    * Send the current text and refocus the field.
